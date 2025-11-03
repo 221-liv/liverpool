@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>碳足迹计算 - 25-10矿大能动</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/constants.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/footprint-calculator.js"></script>
+    <script src="js/main.js" defer></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>碳足迹计算器</h1>
+            <div class="class-info">25-10矿大能动</div>
+        </div>
+    </header>
+
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="index.html">首页</a></li>
+                <li><a href="calculator.html" class="active">碳足迹计算</a></li>
+                <li><a href="records.html">个人记录</a></li>
+                <li><a href="ranking.html">班级排名</a></li>
+                <li><a href="admin.html" class="admin-link">管理员登录</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h2>碳足迹对比计算</h2>
+        <p>通过对比不同的活动选择，了解您的碳减排潜力</p>
+        
+        <div class="calculator-container">
+            <!-- 选项1 -->
+            <div class="calculator-card">
+                <h3>选项 1</h3>
+                <div class="form-group">
+                    <label for="transport-type-1">交通方式</label>
+                    <select id="transport-type-1" required>
+                        <!-- JavaScript 动态填充 -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="distance-1">距离 (公里)</label>
+                    <input type="number" id="distance-1" min="0" step="0.1" value="10" required>
+                </div>
+            </div>
+            
+            <!-- 选项2 -->
+            <div class="calculator-card">
+                <h3>选项 2</h3>
+                <div class="form-group">
+                    <label for="transport-type-2">交通方式</label>
+                    <select id="transport-type-2" required>
+                        <!-- JavaScript 动态填充 -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="distance-2">距离 (公里)</label>
+                    <input type="number" id="distance-2" min="0" step="0.1" value="10" required>
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <button id="calculate-btn" class="btn-primary">计算碳足迹</button>
+        </div>
+        
+        <!-- 结果展示区域 -->
+        <div id="results-section" class="results-section" style="display: none;">
+            <h3>计算结果</h3>
+            
+            <div class="result-comparison">
+                <div class="result-item option1">
+                    <h4 id="option1-name">选项 1</h4>
+                    <div class="carbon-value" id="option1-emission">0 kg</div>
+                    <div>碳排放量</div>
+                </div>
+                
+                <div class="result-item option2">
+                    <h4 id="option2-name">选项 2</h4>
+                    <div class="carbon-value" id="option2-emission">0 kg</div>
+                    <div>碳排放量</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <h4>选择低碳选项可节约</h4>
+                <div class="carbon-saved" id="carbon-saved">0 kg</div>
+                <div>这相当于种植 <span id="trees-saved">0</span> 棵树一年吸收的碳量</div>
+            </div>
+            
+            <!-- 环保建议 -->
+            <div style="margin-top: 30px;">
+                <h4>环保建议</h4>
+                <ul id="reduction-tips">
+                    <!-- JavaScript 动态填充 -->
+                </ul>
+            </div>
+            
+            <!-- 保存记录 -->
+            <div style="margin-top: 30px;">
+                <h4>保存记录</h4>
+                <div class="form-group">
+                    <label for="record-notes">备注 (可选)</label>
+                    <input type="text" id="record-notes" placeholder="输入备注信息...">
+                </div>
+                <button id="save-btn" class="btn-secondary" disabled>保存记录</button>
+            </div>
+        </div>
+        
+        <!-- 碳排放知识 -->
+        <div class="calculator-card" style="margin-top: 30px;">
+            <h3>碳排放知识</h3>
+            <p>碳足迹是指个人、组织或产品在其全生命周期中直接或间接产生的温室气体排放总量，通常以二氧化碳当量（CO₂e）表示。</p>
+            <p>不同交通方式的碳排放强度差异很大：步行和自行车的碳足迹为零，公共交通（如公交车、地铁）的碳足迹较低，而私家车和飞机的碳足迹较高。</p>
+            <p>通过选择更环保的出行方式，我们可以显著减少个人碳足迹，为减缓气候变化贡献力量。</p>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>© 2023 25-10矿大能动 - 碳足迹计算器</p>
+            <p>本网站旨在提高低碳环保意识，为碳减排贡献力量</p>
+        </div>
+    </footer>
+</body>
+</html>","}}}

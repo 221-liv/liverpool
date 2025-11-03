@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人记录 - 25-10矿大能动</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/constants.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/footprint-calculator.js"></script>
+    <script src="js/main.js" defer></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>碳足迹计算器</h1>
+            <div class="class-info">25-10矿大能动</div>
+        </div>
+    </header>
+
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="index.html">首页</a></li>
+                <li><a href="calculator.html">碳足迹计算</a></li>
+                <li><a href="records.html" class="active">个人记录</a></li>
+                <li><a href="ranking.html">班级排名</a></li>
+                <li><a href="admin.html" class="admin-link">管理员登录</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h2>个人碳足迹记录</h2>
+        <p>查看和分析您的碳足迹计算历史</p>
+        
+        <!-- 个人统计信息 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="stats-total-records">0</div>
+                <div class="stat-label">总记录数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stats-total-emission">0 kg</div>
+                <div class="stat-label">总碳排放量</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stats-average-emission">0 kg</div>
+                <div class="stat-label">平均每次排放</div>
+            </div>
+        </div>
+        
+        <!-- 记录表格 -->
+        <div class="records-container">
+            <h3>计算记录</h3>
+            <table class="records-table">
+                <thead>
+            <tr>
+                <th>日期时间</th>
+                <th>学号</th>
+                <th>选项1</th>
+                <th>选项2</th>
+                <th>总排放量</th>
+                <th>节约量</th>
+                <th>备注</th>
+            </tr>
+        </thead>
+                <tbody id="records-table-body">
+                    <!-- JavaScript 动态填充 -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 碳足迹分析建议 -->
+        <div class="calculator-card" style="margin-top: 30px;">
+            <h3>个人碳足迹分析</h3>
+            <p>通过分析您的历史记录，我们可以为您提供更精准的碳减排建议：</p>
+            <ul>
+                <li>识别您的主要碳排放源，有针对性地进行优化</li>
+                <li>追踪您的碳减排进展，见证环保成果</li>
+                <li>了解不同活动的碳排放强度，做出更环保的选择</li>
+            </ul>
+            <p>建议您定期记录和分析自己的碳足迹，持续改进生活方式，为环保贡献力量。</p>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>© 2023 25-10矿大能动 - 碳足迹计算器</p>
+            <p>本网站旨在提高低碳环保意识，为碳减排贡献力量</p>
+        </div>
+    </footer>
+</body>
+</html>
