@@ -456,6 +456,35 @@ function initAdminPage() {
     } else {
         showAdminLogin();
     }
+    
+    // 确保登录按钮事件被正确绑定
+    const loginBtn = document.getElementById('admin-login-btn');
+    if (loginBtn) {
+        // 移除可能存在的重复事件监听器
+        loginBtn.removeEventListener('click', handleAdminLogin);
+        // 添加事件监听器
+        loginBtn.addEventListener('click', handleAdminLogin);
+        
+        // 额外添加回车键登录功能
+        const usernameInput = document.getElementById('admin-username');
+        const passwordInput = document.getElementById('admin-password');
+        
+        if (usernameInput) {
+            usernameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleAdminLogin();
+                }
+            });
+        }
+        
+        if (passwordInput) {
+            passwordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleAdminLogin();
+                }
+            });
+        }
+    }
 }
 
 // 显示管理员登录界面
@@ -466,27 +495,59 @@ function showAdminLogin() {
     if (loginContainer) loginContainer.style.display = 'block';
     if (dashboardContainer) dashboardContainer.style.display = 'none';
     
-    // 初始化登录按钮
-    const loginBtn = document.getElementById('admin-login-btn');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', handleAdminLogin);
+    // 隐藏错误信息
+    const errorElement = document.getElementById('login-error');
+    if (errorElement) {
+        errorElement.style.display = 'none';
     }
+    
+    // 清空输入框
+    const usernameInput = document.getElementById('admin-username');
+    const passwordInput = document.getElementById('admin-password');
+    
+    if (usernameInput) usernameInput.value = '';
+    if (passwordInput) passwordInput.value = '';
 }
 
 // 处理管理员登录
 function handleAdminLogin() {
-    const username = document.getElementById('admin-username').value;
-    const password = document.getElementById('admin-password').value;
-    const credentials = window.ADMIN_CREDENTIALS || {};
+    console.log('尝试管理员登录...');
     
-    if (username === credentials.username && password === credentials.password) {
+    const username = document.getElementById('admin-username')?.value;
+    const password = document.getElementById('admin-password')?.value;
+    const errorElement = document.getElementById('login-error');
+    
+    // 检查输入是否为空
+    if (!username || !password) {
+        if (errorElement) {
+            errorElement.textContent = '请输入用户名和密码';
+            errorElement.style.display = 'block';
+        }
+        return;
+    }
+    
+    // 检查管理员凭证是否存在
+    if (!window.ADMIN_CREDENTIALS) {
+        console.error('管理员凭证未定义');
+        if (errorElement) {
+            errorElement.textContent = '系统错误，请稍后重试';
+            errorElement.style.display = 'block';
+        }
+        return;
+    }
+    
+    console.log('验证凭证:', username, 'vs', window.ADMIN_CREDENTIALS.username);
+    
+    // 验证凭证
+    if (username === window.ADMIN_CREDENTIALS.username && password === window.ADMIN_CREDENTIALS.password) {
         // 登录成功
         utils.storage.set(STORAGE_KEYS.ADMIN_LOGGED_IN, true);
+        console.log('登录成功，跳转到仪表盘');
         utils.showNotification('登录成功', 'success');
         showAdminDashboard();
     } else {
         // 登录失败
-        const errorElement = document.getElementById('login-error');
+        console.log('登录失败：凭证错误');
         if (errorElement) {
             errorElement.textContent = '用户名或密码错误';
             errorElement.style.display = 'block';
