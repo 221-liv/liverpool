@@ -44,9 +44,10 @@ function initNavigation() {
 // 初始化用户信息
 function initUserInfo() {
     const userInfo = utils.storage.get(STORAGE_KEYS.USER_INFO);
+    const userLoggedIn = utils.storage.get(STORAGE_KEYS.USER_LOGGED_IN);
     
-    // 如果没有用户信息，显示注册表单
-    if (!userInfo && !isAdminPage()) {
+    // 如果没有用户信息且没有登录状态，显示注册表单
+    if (!userInfo && !userLoggedIn && !isAdminPage()) {
         showUserRegistrationForm();
     }
 }
@@ -123,6 +124,9 @@ function handleUserRegistration() {
     
     // 保存用户信息
     utils.storage.set(STORAGE_KEYS.USER_INFO, userInfo);
+    
+    // 设置用户登录状态，实现记忆功能
+    utils.storage.set(STORAGE_KEYS.USER_LOGGED_IN, true);
     
     // 更新班级排名数据
     updateClassRanking(userInfo);
@@ -487,6 +491,15 @@ function initAdminPage() {
     }
 }
 
+// 注销用户登录
+function logoutUser() {
+    utils.storage.remove(STORAGE_KEYS.USER_LOGGED_IN);
+    utils.storage.remove(STORAGE_KEYS.USER_INFO);
+    utils.showNotification('已成功注销', 'info');
+    // 刷新页面回到首页
+    window.location.href = 'index.html';
+}
+
 // 显示管理员登录界面
 function showAdminLogin() {
     const loginContainer = document.getElementById('admin-login');
@@ -544,7 +557,10 @@ function handleAdminLogin() {
         utils.storage.set(STORAGE_KEYS.ADMIN_LOGGED_IN, true);
         console.log('登录成功，跳转到仪表盘');
         utils.showNotification('登录成功', 'success');
-        showAdminDashboard();
+        // 强制重新加载仪表盘，确保所有元素正确显示
+        setTimeout(() => {
+            showAdminDashboard();
+        }, 500);
     } else {
         // 登录失败
         console.log('登录失败：凭证错误');

@@ -91,7 +91,8 @@ const STORAGE_KEYS = {
     USER_RECORDS: 'carbon_footprint_records',
     USER_INFO: 'user_info',
     CLASS_RANKING: 'class_carbon_ranking',
-    ADMIN_LOGGED_IN: 'admin_logged_in'
+    ADMIN_LOGGED_IN: 'admin_logged_in',
+    USER_LOGGED_IN: 'user_logged_in'
 };
 
 // 管理员凭证（实际应用中应该使用更安全的方式）
