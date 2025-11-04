@@ -46,8 +46,13 @@ function initUserInfo() {
     const userInfo = utils.storage.get(STORAGE_KEYS.USER_INFO);
     const userLoggedIn = utils.storage.get(STORAGE_KEYS.USER_LOGGED_IN);
     
-    // 如果没有用户信息且没有登录状态，显示注册表单
-    if (!userInfo && !userLoggedIn && !isAdminPage()) {
+    // 如果有登录状态但没有用户信息，清除登录状态
+    if (!userInfo && userLoggedIn) {
+        utils.storage.remove(STORAGE_KEYS.USER_LOGGED_IN);
+    }
+    
+    // 如果没有用户信息且不是管理员页面，显示注册表单
+    if (!userInfo && !isAdminPage()) {
         showUserRegistrationForm();
     }
 }
@@ -134,6 +139,11 @@ function handleUserRegistration() {
     // 显示成功消息并关闭模态框
     utils.showNotification('注册成功，欢迎使用碳足迹计算器！', 'success');
     modal.remove();
+    
+    // 强制刷新当前页面，确保所有功能正常加载
+    if (window.location.pathname !== '/') {
+        window.location.reload();
+    }
 }
 
 // 更新班级排名数据
@@ -302,18 +312,15 @@ function handleSaveRecord() {
     // 获取用户信息
     let userInfo = utils.storage.get(STORAGE_KEYS.USER_INFO);
     
-    if (!userInfo) {
-        // 如果没有用户信息，显示注册表单
-        showUserRegistrationForm();
-        return;
-    }
+    // 即使没有用户信息，也要允许保存记录，只是不关联到特定用户
+    const isAnonymous = !userInfo;
     
     // 准备记录数据
     const record = {
         id: utils.generateId(),
-        userId: userInfo.name,
-        userName: userInfo.name,
-        studentId: userInfo.studentId,
+        userId: isAnonymous ? 'anonymous' : userInfo.name,
+        userName: isAnonymous ? '匿名用户' : userInfo.name,
+        studentId: isAnonymous ? '' : userInfo.studentId,
         activityType: 'transportation',
         option1: window.currentCalculation.option1,
         option2: window.currentCalculation.option2,
@@ -323,25 +330,33 @@ function handleSaveRecord() {
         timestamp: new Date().toISOString()
     };
     
-    // 保存记录
-    window.carbonCalculator.saveRecord(record)
-        .then(savedRecord => {
-            // 更新用户总碳排放量
-            userInfo.totalCarbon = (userInfo.totalCarbon || 0) + record.totalEmission;
-            userInfo.lastUpdated = new Date().toISOString();
-            utils.storage.set(STORAGE_KEYS.USER_INFO, userInfo);
-            
-            // 更新班级排名数据
-            updateClassRanking(userInfo);
-            
-            utils.showNotification('记录已保存', 'success');
-            // 重置表单
-            document.getElementById('record-notes').value = '';
-            document.getElementById('save-btn').disabled = true;
-        })
-        .catch(error => {
-            utils.showNotification('保存失败: ' + error.message, 'error');
-        });
+    try {
+        // 保存记录
+        window.carbonCalculator.saveRecord(record)
+            .then(savedRecord => {
+                // 如果有用户信息，更新用户总碳排放量
+                if (userInfo) {
+                    userInfo.totalCarbon = (userInfo.totalCarbon || 0) + record.totalEmission;
+                    userInfo.lastUpdated = new Date().toISOString();
+                    utils.storage.set(STORAGE_KEYS.USER_INFO, userInfo);
+                    
+                    // 更新班级排名数据
+                    updateClassRanking(userInfo);
+                }
+                
+                utils.showNotification('记录已保存', 'success');
+                // 重置表单
+                document.getElementById('record-notes').value = '';
+                document.getElementById('save-btn').disabled = true;
+            })
+            .catch(error => {
+                console.error('保存记录失败:', error);
+                utils.showNotification('保存失败，请稍后重试', 'error');
+            });
+    } catch (error) {
+        console.error('处理保存记录时出错:', error);
+        utils.showNotification('保存失败，请稍后重试', 'error');
+    }
 }
 
 // 初始化记录页面
