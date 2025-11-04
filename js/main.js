@@ -1,31 +1,196 @@
 // 主JavaScript文件 - 页面交互和功能初始化
 
-// 等待DOM加载完成
- document.addEventListener('DOMContentLoaded', function() {
-    // 根据当前页面执行相应的初始化
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-    
-    switch (currentPage) {
-        case 'index.html':
-            initHomePage();
-            break;
-        case 'calculator.html':
-            initCalculatorPage();
-            break;
-        case 'records.html':
-            initRecordsPage();
-            break;
-        case 'ranking.html':
-            initRankingPage();
-            break;
-        case 'admin.html':
-            initAdminPage();
-            break;
+// 全局变量和基础功能定义
+(function() {
+    // 安全创建工具函数
+    if (!window.utils) {
+        window.utils = {
+            showNotification: function(message, type = 'info') {
+                console.log(`${type.toUpperCase()}: ${message}`);
+                // 尝试显示浏览器通知
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    try {
+                        new Notification(message);
+                    } catch (e) {}
+                }
+            },
+            formatCarbonEmission: function(emission) {
+                if (typeof emission !== 'number' || isNaN(emission)) return '0.00 公斤';
+                return emission.toFixed(2) + ' 公斤';
+            },
+            validateNumberInput: function(value, min) {
+                return !isNaN(value) && value > min;
+            }
+        };
     }
     
-    // 初始化通用组件
-    initNavigation();
-    initUserInfo();
+    // 交通选项定义
+    window.TRANSPORT_OPTIONS = [
+        { value: 'car_small', label: '小型汽车', emissionFactor: 0.2 },
+        { value: 'bus', label: '公交车', emissionFactor: 0.05 },
+        { value: 'subway', label: '地铁', emissionFactor: 0.03 },
+        { value: 'bike', label: '自行车', emissionFactor: 0 },
+        { value: 'walk', label: '步行', emissionFactor: 0 }
+    ];
+    
+    // 碳足迹计算器类
+    window.CarbonFootprintCalculator = class {
+        constructor() {
+            this.transportationFactors = {};
+            window.TRANSPORT_OPTIONS.forEach(option => {
+                this.transportationFactors[option.value] = option.emissionFactor;
+            });
+        }
+        
+        calculateEmission(item) {
+            try {
+                if (item.type === 'transportation') {
+                    const factor = this.transportationFactors[item.item] || 0.2;
+                    return item.amount * factor;
+                }
+                return 0;
+            } catch (error) {
+                console.error('计算排放出错:', error);
+                return 0;
+            }
+        }
+        
+        compareEmissions(option1, option2) {
+            const emission1 = this.calculateEmission(option1);
+            const emission2 = this.calculateEmission(option2);
+            
+            return {
+                option1: { ...option1, emission: emission1 },
+                option2: { ...option2, emission: emission2 },
+                difference: Math.abs(emission1 - emission2),
+                savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
+                lowerOption: emission1 > emission2 ? 'option2' : 'option1'
+            };
+        }
+        
+        calculateEquivalentTrees(carbonAmount) {
+            // 假设一棵树一年吸收21.77公斤CO2
+            return carbonAmount / 21.77;
+        }
+    };
+})();
+
+// 确保页面加载完成后初始化
+window.addEventListener('DOMContentLoaded', function() {
+    console.log('页面加载完成，开始初始化');
+    
+    try {
+        // 创建计算器实例
+        window.carbonCalculator = new CarbonFootprintCalculator();
+        
+        // 获取当前页面路径
+        const currentPath = window.location.pathname;
+        const pageName = currentPath.split('/').pop() || 'index.html';
+        console.log('当前页面:', pageName);
+        
+        // 初始化用户信息 - 即使失败也不影响主要功能
+        try {
+            if (typeof initUserInfo === 'function') {
+                initUserInfo();
+            }
+        } catch (userInfoError) {
+            console.error('用户信息初始化出错:', userInfoError);
+        }
+        
+        // 初始化导航 - 即使失败也不影响主要功能
+        try {
+            if (typeof initNavigation === 'function') {
+                initNavigation();
+            }
+        } catch (navError) {
+            console.error('导航初始化出错:', navError);
+        }
+        
+        // 根据页面类型初始化相应功能
+        try {
+            // 支持直接访问根路径和计算器页面
+            if (pageName === 'index.html' || pageName === '' || pageName.includes('calculator.html')) {
+                console.log('初始化计算器页面');
+                if (typeof initCalculatorPage === 'function') {
+                    initCalculatorPage();
+                }
+            } 
+            // 记录页面
+            else if (pageName.includes('records.html')) {
+                console.log('初始化记录页面');
+                if (typeof initRecordsPage === 'function') {
+                    initRecordsPage();
+                }
+            }
+            // 排名页面
+            else if (pageName.includes('ranking.html')) {
+                console.log('初始化排名页面');
+                if (typeof initRankingPage === 'function') {
+                    initRankingPage();
+                }
+            }
+            // 管理员页面
+            else if (pageName.includes('admin.html')) {
+                console.log('初始化管理员页面');
+                if (typeof initAdminPage === 'function') {
+                    initAdminPage();
+                }
+            }
+        } catch (pageInitError) {
+            console.error('页面功能初始化出错:', pageInitError);
+            utils.showNotification('页面功能初始化出现问题，但基本功能仍可用', 'warning');
+            
+            // 作为备用，始终尝试初始化计算器功能
+            if (typeof initCalculatorPage === 'function' && !pageName.includes('admin.html')) {
+                try {
+                    initCalculatorPage();
+                    utils.showNotification('已启用计算器备用模式', 'info');
+                } catch (calcError) {
+                    console.error('备用计算器初始化也失败:', calcError);
+                }
+            }
+        }
+        
+    } catch (globalError) {
+        console.error('全局初始化严重错误:', globalError);
+        alert('页面初始化时发生错误，但我们将尝试启动基本功能');
+        
+        // 最后的备用方案 - 直接初始化一个最简化的计算器
+        try {
+            if (document.getElementById('calculate-btn')) {
+                document.getElementById('calculate-btn').addEventListener('click', function() {
+                    const distance1 = parseFloat(document.getElementById('distance-1')?.value || '10');
+                    const distance2 = parseFloat(document.getElementById('distance-2')?.value || '10');
+                    const distance = Math.max(distance1, distance2);
+                    
+                    // 显示模拟结果
+                    if (document.getElementById('option1-emission')) {
+                        document.getElementById('option1-emission').textContent = (distance * 0.2).toFixed(2) + ' 公斤';
+                    }
+                    if (document.getElementById('option2-emission')) {
+                        document.getElementById('option2-emission').textContent = (distance * 0.05).toFixed(2) + ' 公斤';
+                    }
+                    if (document.getElementById('carbon-saved')) {
+                        document.getElementById('carbon-saved').textContent = (distance * 0.15).toFixed(2) + ' 公斤';
+                    }
+                    if (document.getElementById('trees-saved')) {
+                        document.getElementById('trees-saved').textContent = (distance * 0.15 / 21.77).toFixed(2);
+                    }
+                    if (document.getElementById('results-section')) {
+                        document.getElementById('results-section').style.display = 'block';
+                    }
+                });
+                
+                // 设置默认距离值
+                if (document.getElementById('distance-1')) document.getElementById('distance-1').value = '10';
+                if (document.getElementById('distance-2')) document.getElementById('distance-2').value = '10';
+                
+                utils.showNotification('已启用紧急计算模式', 'info');
+            }
+        } catch (emergencyError) {
+            console.error('紧急模式也失败:', emergencyError);
+        }
+    }
 });
 
 // 初始化导航
@@ -266,7 +431,6 @@ function initCalculatorPage() {
         utils.showNotification('计算器初始化失败，请刷新页面重试', 'error');
     }
 }
-}
 
 // 处理计算逻辑 - 增强错误处理和用户体验
 function handleCalculate() {
@@ -397,77 +561,218 @@ function displayComparisonResults(comparison) {
     }
 }
 
-// 更新碳减排建议
+// 更新碳减排建议 - 增强错误处理
 function updateCarbonReductionTips(comparison) {
-    const higherOption = comparison.lowerOption === 'option1' ? comparison.option2 : comparison.option1;
-    const tips = window.carbonCalculator.getCarbonReductionTips(higherOption.emission, higherOption.type);
-    
-    const tipsElement = document.getElementById('reduction-tips');
-    if (tipsElement) {
-        tipsElement.innerHTML = '';
+    try {
+        const tipsContainer = document.getElementById('carbon-reduction-tips');
         
-        tips.forEach(tip => {
-            const li = document.createElement('li');
-            li.textContent = tip;
-            tipsElement.appendChild(li);
-        });
+        if (!tipsContainer) {
+            console.warn('未找到碳减排建议容器');
+            return;
+        }
+        
+        if (!comparison) {
+            tipsContainer.innerHTML = '<div class="tip">暂无建议数据</div>';
+            return;
+        }
+        
+        // 获取交通方式标签
+        const getTransportLabel = (type) => {
+            try {
+                const transportOptions = window.TRANSPORT_OPTIONS || [
+                    { value: 'car_small', label: '小型汽车' },
+                    { value: 'bus', label: '公交车' },
+                    { value: 'subway', label: '地铁' },
+                    { value: 'bike', label: '自行车' },
+                    { value: 'walk', label: '步行' }
+                ];
+                const option = transportOptions.find(opt => opt.value === type);
+                return option ? option.label : type || '未知交通方式';
+            } catch (e) {
+                return type || '未知交通方式';
+            }
+        };
+        
+        // 安全获取数据
+        const option1Item = comparison?.option1?.item || '未知交通方式1';
+        const option2Item = comparison?.option2?.item || '未知交通方式2';
+        const savings = comparison?.savings || 0;
+        const option1Amount = comparison?.option1?.amount || 1;
+        
+        // 简单的建议逻辑
+        try {
+            if (comparison.lowerOption === 'option2') {
+                tipsContainer.innerHTML = `
+                    <div class="tip">
+                        <strong>环保建议：</strong>使用${getTransportLabel(option2Item)}相比${getTransportLabel(option1Item)}可以显著减少碳排放。
+                    </div>
+                    <div class="tip">
+                        每100公里可以减少约${(savings * 100 / Math.max(option1Amount, 1)).toFixed(2)}公斤的二氧化碳排放。
+                    </div>
+                `;
+            } else {
+                tipsContainer.innerHTML = `
+                    <div class="tip">
+                        <strong>环保建议：</strong>使用${getTransportLabel(option1Item)}相比${getTransportLabel(option2Item)}可以显著减少碳排放。
+                    </div>
+                    <div class="tip">
+                        每100公里可以减少约${(savings * 100 / Math.max(option1Amount, 1)).toFixed(2)}公斤的二氧化碳排放。
+                    </div>
+                `;
+            }
+        } catch (htmlError) {
+            console.error('生成建议HTML出错:', htmlError);
+            tipsContainer.innerHTML = '<div class="tip">无法生成环保建议</div>';
+        }
+        
+    } catch (error) {
+        console.error('更新碳减排建议出错:', error);
     }
 }
 
-// 处理保存记录
+// 处理保存记录 - 增强稳定性和匿名支持
 function handleSaveRecord() {
-    if (!window.currentCalculation) {
-        utils.showNotification('没有可保存的计算结果', 'error');
-        return;
-    }
-    
-    // 获取用户信息
-    let userInfo = utils.storage.get(STORAGE_KEYS.USER_INFO);
-    
-    // 即使没有用户信息，也要允许保存记录，只是不关联到特定用户
-    const isAnonymous = !userInfo;
-    
-    // 准备记录数据
-    const record = {
-        id: utils.generateId(),
-        userId: isAnonymous ? 'anonymous' : userInfo.name,
-        userName: isAnonymous ? '匿名用户' : userInfo.name,
-        studentId: isAnonymous ? '' : userInfo.studentId,
-        activityType: 'transportation',
-        option1: window.currentCalculation.option1,
-        option2: window.currentCalculation.option2,
-        savings: window.currentCalculation.savings,
-        totalEmission: Math.max(window.currentCalculation.option1.emission, window.currentCalculation.option2.emission),
-        notes: document.getElementById('record-notes').value || '',
-        timestamp: new Date().toISOString()
-    };
-    
     try {
-        // 保存记录
-        window.carbonCalculator.saveRecord(record)
-            .then(savedRecord => {
-                // 如果有用户信息，更新用户总碳排放量
-                if (userInfo) {
-                    userInfo.totalCarbon = (userInfo.totalCarbon || 0) + record.totalEmission;
-                    userInfo.lastUpdated = new Date().toISOString();
-                    utils.storage.set(STORAGE_KEYS.USER_INFO, userInfo);
-                    
-                    // 更新班级排名数据
-                    updateClassRanking(userInfo);
+        // 检查是否有计算结果
+        const currentCalculation = window.currentCalculation;
+        if (!currentCalculation) {
+            utils.showNotification('没有可保存的计算结果，请先进行计算', 'warning');
+            return;
+        }
+        
+        // 安全获取用户信息，支持匿名模式
+        let userInfo = { 
+            id: 'anon_' + Date.now(),
+            name: '匿名用户',
+            isAnonymous: true
+        };
+        
+        let isAnonymous = true;
+        
+        // 尝试获取用户信息但不强制要求
+        try {
+            userInfo = utils.storage.get(STORAGE_KEYS.USER_INFO) || userInfo;
+            isAnonymous = !userInfo || userInfo.isAnonymous;
+        } catch (userInfoError) {
+            console.warn('获取用户信息出错，使用匿名模式:', userInfoError);
+        }
+        
+        // 创建记录对象 - 确保所有必要字段都存在
+        const record = {
+            id: utils.generateId ? utils.generateId() : Date.now().toString(),
+            userId: isAnonymous ? 'anonymous' : (userInfo.name || 'unknown'),
+            userName: isAnonymous ? '匿名用户' : (userInfo.name || '未知用户'),
+            studentId: isAnonymous ? '' : (userInfo.studentId || ''),
+            activityType: 'transportation',
+            option1: {
+                type: currentCalculation?.option1?.type || 'transportation',
+                item: currentCalculation?.option1?.item || 'unknown',
+                amount: currentCalculation?.option1?.amount || 0,
+                emission: currentCalculation?.option1?.emission || 0
+            },
+            option2: {
+                type: currentCalculation?.option2?.type || 'transportation',
+                item: currentCalculation?.option2?.item || 'unknown',
+                amount: currentCalculation?.option2?.amount || 0,
+                emission: currentCalculation?.option2?.emission || 0
+            },
+            savings: currentCalculation?.savings || 0,
+            totalEmission: Math.max(
+                currentCalculation?.option1?.emission || 0,
+                currentCalculation?.option2?.emission || 0
+            ),
+            notes: document.getElementById('record-notes')?.value || '',
+            timestamp: new Date().toISOString(),
+            isAnonymous: isAnonymous
+        };
+        
+        // 尝试使用carbonCalculator保存
+        try {
+            if (window.carbonCalculator && typeof window.carbonCalculator.saveRecord === 'function') {
+                window.carbonCalculator.saveRecord(record)
+                    .then(savedRecord => {
+                        // 如果有用户信息，更新用户总碳排放量
+                        if (userInfo && !isAnonymous) {
+                            try {
+                                userInfo.totalCarbon = (userInfo.totalCarbon || 0) + record.totalEmission;
+                                userInfo.lastUpdated = new Date().toISOString();
+                                utils.storage.set(STORAGE_KEYS.USER_INFO, userInfo);
+                                
+                                // 更新班级排名数据
+                                if (typeof updateClassRanking === 'function') {
+                                    updateClassRanking(userInfo);
+                                }
+                            } catch (updateError) {
+                                console.error('更新用户信息出错:', updateError);
+                                // 静默失败，不影响主流程
+                            }
+                        }
+                        
+                        utils.showNotification(isAnonymous ? '匿名记录已保存' : '记录已保存', 'success');
+                        // 重置表单
+                        if (document.getElementById('record-notes')) document.getElementById('record-notes').value = '';
+                        if (document.getElementById('save-btn')) document.getElementById('save-btn').disabled = true;
+                    })
+                    .catch(error => {
+                        console.error('保存记录失败，尝试本地存储:', error);
+                        // 尝试使用localStorage作为备用
+                        saveToLocalStorage(record);
+                    });
+            } else {
+                // 如果carbonCalculator不可用，直接使用localStorage
+                console.warn('carbonCalculator不可用，使用本地存储');
+                saveToLocalStorage(record);
+            }
+        } catch (error) {
+            console.error('保存过程出错，尝试备用方案:', error);
+            saveToLocalStorage(record);
+        }
+        
+        // 辅助函数：保存到localStorage作为备用
+        function saveToLocalStorage(recordToSave) {
+            try {
+                let records = [];
+                // 获取现有记录
+                try {
+                    const storedRecords = localStorage.getItem('carbonRecords');
+                    if (storedRecords) {
+                        records = JSON.parse(storedRecords);
+                        if (!Array.isArray(records)) records = [];
+                    }
+                } catch (parseError) {
+                    console.error('解析现有记录出错:', parseError);
+                    records = [];
                 }
                 
-                utils.showNotification('记录已保存', 'success');
+                records.push(recordToSave);
+                
+                // 限制记录数量，避免localStorage溢出
+                if (records.length > 1000) {
+                    records = records.slice(-1000);
+                    console.warn('记录数量过多，已限制为最近1000条');
+                }
+                
+                localStorage.setItem('carbonRecords', JSON.stringify(records));
+                utils.showNotification(isAnonymous ? '匿名记录已保存到本地' : '记录已保存到本地', 'success');
+                
                 // 重置表单
-                document.getElementById('record-notes').value = '';
-                document.getElementById('save-btn').disabled = true;
-            })
-            .catch(error => {
-                console.error('保存记录失败:', error);
-                utils.showNotification('保存失败，请稍后重试', 'error');
-            });
+                if (document.getElementById('record-notes')) document.getElementById('record-notes').value = '';
+                if (document.getElementById('save-btn')) document.getElementById('save-btn').disabled = true;
+                
+                if (isAnonymous) {
+                    setTimeout(() => {
+                        utils.showNotification('提示：匿名记录将存储在本地浏览器中', 'info');
+                    }, 1500);
+                }
+            } catch (saveError) {
+                console.error('本地存储也失败:', saveError);
+                utils.showNotification('保存记录失败，请检查浏览器存储权限', 'error');
+            }
+        }
+        
     } catch (error) {
-        console.error('处理保存记录时出错:', error);
-        utils.showNotification('保存失败，请稍后重试', 'error');
+        console.error('处理保存记录时发生未预期的错误:', error);
+        utils.showNotification('保存操作遇到问题，请重试', 'error');
     }
 }
 
