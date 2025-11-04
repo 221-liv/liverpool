@@ -141,8 +141,8 @@ function exportToCSV(data, filename = 'carbon_footprint_data.csv') {
     // 获取所有字段名
     const headers = Object.keys(data[0]);
     
-    // 创建CSV内容
-    let csvContent = headers.join(',') + '\n';
+    // 创建CSV内容，添加UTF-8 BOM以防止中文乱码
+    let csvContent = '\uFEFF' + headers.join(',') + '\n';
     
     // 添加数据行
     data.forEach(row => {

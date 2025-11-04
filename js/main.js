@@ -1,51 +1,141 @@
 // 主JavaScript文件 - 页面交互和功能初始化
 
-// 全局变量和基础功能定义
-(function() {
-    // 安全创建工具函数
-    if (!window.utils) {
-        window.utils = {
-            showNotification: function(message, type = 'info') {
-                console.log(`${type.toUpperCase()}: ${message}`);
-                // 尝试显示浏览器通知
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    try {
-                        new Notification(message);
-                    } catch (e) {}
-                }
-            },
-            formatCarbonEmission: function(emission) {
-                if (typeof emission !== 'number' || isNaN(emission)) return '0.00 公斤';
-                return emission.toFixed(2) + ' 公斤';
-            },
-            validateNumberInput: function(value, min) {
-                return !isNaN(value) && value > min;
-            }
-        };
+// ===== 核心安全初始化 - 确保所有全局常量在任何情况下都可用 =====
+// 立即定义所有必要的全局常量默认值，防止在其他文件加载完成前访问时出错
+
+// 确保STORAGE_KEYS存在
+window.STORAGE_KEYS = window.STORAGE_KEYS || {
+    USER_INFO: 'carbon_app_user_info',
+    USER_RECORDS: 'carbon_app_user_records',
+    CLASS_RANKING: 'carbon_app_class_ranking',
+    ADMIN_SESSION: 'carbon_app_admin_session'
+};
+
+// 确保EMISSION_FACTORS存在
+window.EMISSION_FACTORS = window.EMISSION_FACTORS || {
+    transportation: {
+        car_small: 0.2,
+        bus: 0.05,
+        subway: 0.03,
+        bike: 0,
+        walk: 0,
+        car: 0.2,
+        walking: 0,
+        bicycle: 0,
+        taxi: 0.15,
+        train: 0.02,
+        plane: 0.25
+    },
+    energy: {},
+    diet: {}
+};
+
+// 确保TRANSPORT_OPTIONS存在
+window.TRANSPORT_OPTIONS = window.TRANSPORT_OPTIONS || [
+    { value: 'walk', label: '步行', emissionFactor: 0 },
+    { value: 'bike', label: '自行车', emissionFactor: 0 },
+    { value: 'subway', label: '地铁', emissionFactor: 0.03 },
+    { value: 'bus', label: '公交车', emissionFactor: 0.05 },
+    { value: 'car_small', label: '小型汽车', emissionFactor: 0.2 },
+    { value: 'walking', label: '步行', emissionFactor: 0 },
+    { value: 'bicycle', label: '自行车', emissionFactor: 0 },
+    { value: 'taxi', label: '出租车', emissionFactor: 0.15 },
+    { value: 'train', label: '火车', emissionFactor: 0.02 },
+    { value: 'plane', label: '飞机', emissionFactor: 0.25 }
+];
+
+// 确保ACTIVITY_TYPES存在
+window.ACTIVITY_TYPES = window.ACTIVITY_TYPES || {};
+
+// 确保utils对象存在
+window.utils = window.utils || {};
+window.utils.storage = window.utils.storage || {
+    get: function(key) {
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : null;
+        } catch (e) {
+            return null;
+        }
+    },
+    set: function(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+};
+
+// 确保计算器类存在
+if (!window.CarbonFootprintCalculator) {
+    window.CarbonFootprintCalculator = class {
+        constructor() {
+            this.emissionFactors = window.EMISSION_FACTORS || {};
+        }
+        calculateEmission(transportType, distance) {
+            const factor = this.emissionFactors.transportation?.[transportType] || 0.2;
+            return (distance || 0) * factor;
+        }
+    };
+}
+
+// 确保碳足迹计算器实例存在
+if (!window.carbonCalculator) {
+    window.carbonCalculator = new window.CarbonFootprintCalculator();
+}
+
+// 依赖项等待函数
+function waitForDependencies() {
+    // 检查必要的全局对象是否存在（现在它们至少有默认值）
+    if (!window.utils || !window.STORAGE_KEYS || !window.EMISSION_FACTORS) {
+        setTimeout(waitForDependencies, 100);
+        return;
     }
     
-    // 交通选项定义
-    window.TRANSPORT_OPTIONS = [
-        { value: 'car_small', label: '小型汽车', emissionFactor: 0.2 },
-        { value: 'bus', label: '公交车', emissionFactor: 0.05 },
-        { value: 'subway', label: '地铁', emissionFactor: 0.03 },
-        { value: 'bike', label: '自行车', emissionFactor: 0 },
-        { value: 'walk', label: '步行', emissionFactor: 0 }
-    ];
+    // 初始化基础功能
+    initBaseFunctionality();
+}
+
+// 初始化基础功能
+function initBaseFunctionality() {
+    console.log('初始化基础功能');
+    
+    // 使用constants.js中的TRANSPORT_OPTIONS，但确保添加emissionFactor
+    if (!window.TRANSPORT_OPTIONS) {
+        window.TRANSPORT_OPTIONS = [
+            { value: 'car_small', label: '小型汽车', emissionFactor: 0.2 },
+            { value: 'bus', label: '公交车', emissionFactor: 0.05 },
+            { value: 'subway', label: '地铁', emissionFactor: 0.03 },
+            { value: 'bike', label: '自行车', emissionFactor: 0 },
+            { value: 'walk', label: '步行', emissionFactor: 0 }
+        ];
+    } else {
+        // 确保每个选项都有emissionFactor
+        window.TRANSPORT_OPTIONS.forEach(option => {
+            if (!option.emissionFactor) {
+                option.emissionFactor = window.EMISSION_FACTORS?.transportation?.[option.value] || 0.2;
+            }
+        });
+    }
     
     // 碳足迹计算器类
     window.CarbonFootprintCalculator = class {
         constructor() {
             this.transportationFactors = {};
-            window.TRANSPORT_OPTIONS.forEach(option => {
+            const transportOptions = window.TRANSPORT_OPTIONS || [];
+            transportOptions.forEach(option => {
                 this.transportationFactors[option.value] = option.emissionFactor;
             });
         }
         
         calculateEmission(item) {
             try {
-                if (item.type === 'transportation') {
-                    const factor = this.transportationFactors[item.item] || 0.2;
+                if (item?.type === 'transportation' && item?.item && typeof item.amount === 'number') {
+                    // 优先使用构造时存储的系数，否则从EMISSION_FACTORS获取
+                    const factor = this.transportationFactors[item.item] || 
+                                 window.EMISSION_FACTORS?.transportation?.[item.item] || 0.2;
                     return item.amount * factor;
                 }
                 return 0;
@@ -72,30 +162,61 @@
             // 假设一棵树一年吸收21.77公斤CO2
             return carbonAmount / 21.77;
         }
+        
+        // 添加获取统计数据的方法，防止在initHomePage中出错
+        getStatistics() {
+            return {
+                totalEmission: 0,
+                totalSavings: 0,
+                recordCount: 0
+            };
+        }
     };
-})();
+}
+
+// 安全初始化用户信息
+function initUserInfo() {
+    try {
+        // 确保STORAGE_KEYS存在
+        if (!window.STORAGE_KEYS) {
+            console.error('STORAGE_KEYS未定义');
+            return;
+        }
+        
+        const userInfo = window.utils?.storage?.get ? 
+                         window.utils.storage.get(window.STORAGE_KEYS.USER_INFO) : null;
+        
+        // 只显示注册提示，不强制要求注册
+        if (!userInfo && !isAdminPage()) {
+            setTimeout(() => {
+                if (window.utils?.showNotification) {
+                    window.utils.showNotification('注册以保存您的历史记录和统计数据', 'info');
+                }
+            }, 1000);
+        }
+    } catch (error) {
+        console.error('初始化用户信息出错:', error);
+    }
+}
 
 // 确保页面加载完成后初始化
 window.addEventListener('DOMContentLoaded', function() {
     console.log('页面加载完成，开始初始化');
     
+    // 启动依赖等待机制，确保所有必要的模块都已加载
+    waitForDependencies();
+    
+    // 同时开始页面初始化流程
+    initializePage();
+});
+
+// 初始化页面的主要功能
+function initializePage() {
     try {
-        // 创建计算器实例
-        window.carbonCalculator = new CarbonFootprintCalculator();
-        
         // 获取当前页面路径
         const currentPath = window.location.pathname;
         const pageName = currentPath.split('/').pop() || 'index.html';
         console.log('当前页面:', pageName);
-        
-        // 初始化用户信息 - 即使失败也不影响主要功能
-        try {
-            if (typeof initUserInfo === 'function') {
-                initUserInfo();
-            }
-        } catch (userInfoError) {
-            console.error('用户信息初始化出错:', userInfoError);
-        }
         
         // 初始化导航 - 即使失败也不影响主要功能
         try {
@@ -106,6 +227,37 @@ window.addEventListener('DOMContentLoaded', function() {
             console.error('导航初始化出错:', navError);
         }
         
+        // 安全创建计算器实例
+        try {
+            if (!window.carbonCalculator && typeof window.CarbonFootprintCalculator === 'function') {
+                window.carbonCalculator = new window.CarbonFootprintCalculator();
+            } else if (!window.carbonCalculator) {
+                // 创建一个最小化的计算器实例作为备用
+                window.carbonCalculator = {
+                    calculateEmission: function(item) { return (item?.amount || 0) * 0.2; },
+                    compareEmissions: function(option1, option2) {
+                        const e1 = this.calculateEmission(option1);
+                        const e2 = this.calculateEmission(option2);
+                        return { option1: {emission: e1}, option2: {emission: e2}, savings: Math.abs(e1-e2) };
+                    }
+                };
+                console.log('使用备用计算器实例');
+            }
+        } catch (calcError) {
+            console.error('创建计算器实例出错:', calcError);
+            // 继续执行，不中断整个流程
+        }
+        
+        // 尝试初始化用户信息
+        try {
+            if (typeof initUserInfo === 'function') {
+                initUserInfo();
+            }
+        } catch (userInfoError) {
+            console.error('用户信息初始化出错:', userInfoError);
+            // 静默失败，不影响其他功能
+        }
+        
         // 根据页面类型初始化相应功能
         try {
             // 支持直接访问根路径和计算器页面
@@ -113,6 +265,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 console.log('初始化计算器页面');
                 if (typeof initCalculatorPage === 'function') {
                     initCalculatorPage();
+                } else {
+                    console.warn('initCalculatorPage函数未定义，使用基础计算功能');
+                    setupBasicCalculator();
                 }
             } 
             // 记录页面
@@ -138,13 +293,17 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         } catch (pageInitError) {
             console.error('页面功能初始化出错:', pageInitError);
-            utils.showNotification('页面功能初始化出现问题，但基本功能仍可用', 'warning');
+            if (window.utils?.showNotification) {
+                window.utils.showNotification('页面功能初始化出现问题，但基本功能仍可用', 'warning');
+            }
             
             // 作为备用，始终尝试初始化计算器功能
-            if (typeof initCalculatorPage === 'function' && !pageName.includes('admin.html')) {
+            if (!pageName.includes('admin.html')) {
                 try {
-                    initCalculatorPage();
-                    utils.showNotification('已启用计算器备用模式', 'info');
+                    setupBasicCalculator();
+                    if (window.utils?.showNotification) {
+                        window.utils.showNotification('已启用计算器备用模式', 'info');
+                    }
                 } catch (calcError) {
                     console.error('备用计算器初始化也失败:', calcError);
                 }
@@ -153,45 +312,90 @@ window.addEventListener('DOMContentLoaded', function() {
         
     } catch (globalError) {
         console.error('全局初始化严重错误:', globalError);
-        alert('页面初始化时发生错误，但我们将尝试启动基本功能');
         
         // 最后的备用方案 - 直接初始化一个最简化的计算器
         try {
-            if (document.getElementById('calculate-btn')) {
-                document.getElementById('calculate-btn').addEventListener('click', function() {
-                    const distance1 = parseFloat(document.getElementById('distance-1')?.value || '10');
-                    const distance2 = parseFloat(document.getElementById('distance-2')?.value || '10');
-                    const distance = Math.max(distance1, distance2);
-                    
-                    // 显示模拟结果
-                    if (document.getElementById('option1-emission')) {
-                        document.getElementById('option1-emission').textContent = (distance * 0.2).toFixed(2) + ' 公斤';
-                    }
-                    if (document.getElementById('option2-emission')) {
-                        document.getElementById('option2-emission').textContent = (distance * 0.05).toFixed(2) + ' 公斤';
-                    }
-                    if (document.getElementById('carbon-saved')) {
-                        document.getElementById('carbon-saved').textContent = (distance * 0.15).toFixed(2) + ' 公斤';
-                    }
-                    if (document.getElementById('trees-saved')) {
-                        document.getElementById('trees-saved').textContent = (distance * 0.15 / 21.77).toFixed(2);
-                    }
-                    if (document.getElementById('results-section')) {
-                        document.getElementById('results-section').style.display = 'block';
-                    }
-                });
-                
-                // 设置默认距离值
-                if (document.getElementById('distance-1')) document.getElementById('distance-1').value = '10';
-                if (document.getElementById('distance-2')) document.getElementById('distance-2').value = '10';
-                
-                utils.showNotification('已启用紧急计算模式', 'info');
-            }
+            setupBasicCalculator();
         } catch (emergencyError) {
             console.error('紧急模式也失败:', emergencyError);
         }
     }
-});
+}
+
+// 设置基础计算器功能，不依赖复杂的类和函数
+function setupBasicCalculator() {
+    console.log('设置基础计算器功能');
+    
+    // 为计算按钮添加事件监听
+    const calculateBtn = document.getElementById('calculate-btn');
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', function() {
+            try {
+                // 获取距离输入
+                const distance1 = parseFloat(document.getElementById('distance-1')?.value || '10');
+                const distance2 = parseFloat(document.getElementById('distance-2')?.value || '10');
+                const distance = Math.max(distance1, distance2);
+                
+                // 简单计算结果
+                const emission1 = distance * 0.2; // 假设第一种交通方式
+                const emission2 = distance * 0.05; // 假设第二种交通方式
+                const savings = emission1 - emission2;
+                const trees = savings / 21.77;
+                
+                // 显示结果
+                if (document.getElementById('option1-emission')) {
+                    document.getElementById('option1-emission').textContent = emission1.toFixed(2) + ' 公斤';
+                }
+                if (document.getElementById('option2-emission')) {
+                    document.getElementById('option2-emission').textContent = emission2.toFixed(2) + ' 公斤';
+                }
+                if (document.getElementById('carbon-saved')) {
+                    document.getElementById('carbon-saved').textContent = savings.toFixed(2) + ' 公斤';
+                }
+                if (document.getElementById('trees-saved')) {
+                    document.getElementById('trees-saved').textContent = trees.toFixed(2);
+                }
+                if (document.getElementById('results-section')) {
+                    document.getElementById('results-section').style.display = 'block';
+                }
+                
+                // 保存计算结果供后续使用
+                window.currentCalculation = {
+                    option1: { type: 'transportation', item: 'car', amount: distance, emission: emission1 },
+                    option2: { type: 'transportation', item: 'bus', amount: distance, emission: emission2 },
+                    savings: savings
+                };
+                
+                // 启用保存按钮
+                const saveBtn = document.getElementById('save-btn');
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                }
+                
+            } catch (calcError) {
+                console.error('基础计算出错:', calcError);
+                if (window.utils?.showNotification) {
+                    window.utils.showNotification('计算过程中出现错误', 'error');
+                }
+            }
+        });
+        
+        // 设置默认距离值
+        if (document.getElementById('distance-1')) document.getElementById('distance-1').value = '10';
+        if (document.getElementById('distance-2')) document.getElementById('distance-2').value = '10';
+    }
+    
+    // 设置保存按钮事件
+    const saveBtn = document.getElementById('save-btn');
+    if (saveBtn) {
+        saveBtn.disabled = true; // 默认禁用
+        saveBtn.addEventListener('click', function() {
+            if (typeof handleSaveRecord === 'function') {
+                handleSaveRecord();
+            }
+        });
+    }
+}
 
 // 初始化导航
 function initNavigation() {
@@ -224,88 +428,16 @@ function isAdminPage() {
     return window.location.pathname.includes('admin.html');
 }
 
-// 创建并显示用户注册表单
+// 重定向到独立的注册页面
 function showUserRegistrationForm() {
-    // 创建模态框容器
-    const modalContainer = document.createElement('div');
-    modalContainer.className = 'modal-overlay';
-    modalContainer.id = 'registration-modal';
-    
-    // 模态框内容
-    modalContainer.innerHTML = `
-        <div class="modal-content">
-            <h2>学生注册</h2>
-            <div class="form-group">
-                <label for="reg-name">姓名 *</label>
-                <input type="text" id="reg-name" placeholder="请输入您的姓名" required>
-            </div>
-            <div class="form-group">
-                <label for="reg-studentId">学号 *</label>
-                <input type="text" id="reg-studentId" placeholder="请输入您的学号" required>
-            </div>
-            <div class="form-actions">
-                <button id="reg-submit" class="btn-primary">注册</button>
-                <button id="reg-cancel" class="btn-secondary">取消</button>
-            </div>
-            <p class="form-note">注：本系统仅供25-10矿大能动班级学生使用</p>
-        </div>
-    `;
-    
-    // 添加到页面
-    document.body.appendChild(modalContainer);
-    
-    // 绑定事件
-    document.getElementById('reg-submit').addEventListener('click', handleUserRegistration);
-    document.getElementById('reg-cancel').addEventListener('click', () => {
-        // 如果用户取消注册，重定向到首页
-        modalContainer.remove();
-        utils.showNotification('请完成注册以使用系统功能', 'warning');
-    });
+    // 直接重定向到专用的注册页面
+    window.location.href = 'register.html';
 }
 
-// 处理用户注册
+// 处理用户注册（保留此函数但重定向到注册页面）
 function handleUserRegistration() {
-    const name = document.getElementById('reg-name').value.trim();
-    const studentId = document.getElementById('reg-studentId').value.trim();
-    const modal = document.getElementById('registration-modal');
-    
-    // 验证输入
-    if (!name) {
-        utils.showNotification('请输入姓名', 'error');
-        return;
-    }
-    
-    if (!studentId) {
-        utils.showNotification('请输入学号', 'error');
-        return;
-    }
-    
-    // 创建用户信息
-    const userInfo = {
-        name,
-        studentId,
-        totalCarbon: 0,
-        joinDate: new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
-    };
-    
-    // 保存用户信息
-    utils.storage.set(STORAGE_KEYS.USER_INFO, userInfo);
-    
-    // 设置用户登录状态，实现记忆功能
-    utils.storage.set(STORAGE_KEYS.USER_LOGGED_IN, true);
-    
-    // 更新班级排名数据
-    updateClassRanking(userInfo);
-    
-    // 显示成功消息并关闭模态框
-    utils.showNotification('注册成功，欢迎使用碳足迹计算器！', 'success');
-    modal.remove();
-    
-    // 强制刷新当前页面，确保所有功能正常加载
-    if (window.location.pathname !== '/') {
-        window.location.reload();
-    }
+    // 重定向到专用的注册页面
+    window.location.href = 'register.html';
 }
 
 // 更新班级排名数据
@@ -1155,22 +1287,38 @@ function loadAllUserData() {
 // 处理数据导出
 function handleExportData() {
     const ranking = window.carbonCalculator.getClassRanking();
-    const records = window.carbonCalculator.getUserRecords();
+    
+    // 定义虚拟人物列表，用于过滤
+    const virtualNames = ['张三', '李四', '王五', '赵六', '测试', 'demo', 'test'];
+    
+    // 过滤掉虚拟人物数据，只保留真实用户数据
+    const realUsers = ranking.filter(user => {
+        // 过滤条件：1. 不是虚拟姓名 2. 有有效的学号
+        const isVirtualName = virtualNames.some(virtualName => 
+            user.name && user.name.includes(virtualName)
+        );
+        const hasValidStudentId = user.studentId && user.studentId.trim().length >= 8;
+        
+        return !isVirtualName && hasValidStudentId;
+    });
+    
+    // 对真实用户重新排序
+    realUsers.sort((a, b) => (a.totalCarbon || 0) - (b.totalCarbon || 0));
     
     // 准备导出数据
-    const exportData = ranking.map(user => ({
-        '排名': ranking.findIndex(u => u.name === user.name) + 1,
-        '姓名': user.name,
-        '学号': user.studentId,
+    const exportData = realUsers.map((user, index) => ({
+        '排名': index + 1,
+        '姓名': user.name || '',
+        '学号': user.studentId || '',
         '总碳排放量(kg)': (user.totalCarbon || 0).toFixed(2),
-        '最后更新时间': utils.formatDate(user.lastUpdated)
+        '最后更新时间': utils.formatDate(user.lastUpdated || new Date())
     }));
     
     // 导出为CSV
     const filename = `碳足迹数据_${utils.formatDate(new Date(), 'YYYYMMDD_HHmm')}.csv`;
     utils.exportToCSV(exportData, filename);
     
-    utils.showNotification('数据导出成功', 'success');
+    utils.showNotification(`数据导出成功，共导出 ${exportData.length} 条真实用户数据`, 'success');
 }
 
 // 处理管理员注销
