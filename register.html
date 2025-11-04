@@ -9,88 +9,216 @@
     <script src="js/utils.js"></script>
     <script src="js/footprint-calculator.js"></script>
     <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 头部样式 */
+        header {
+            background-color: #0066cc;
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 主内容区样式 */
         .register-container {
-            max-width: 500px;
+            max-width: 600px;
             margin: 50px auto;
-            padding: 30px;
+            padding: 40px;
             background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
         }
-        .register-container h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
-        .form-group {
+        
+        h2 {
+            color: #0066cc;
             margin-bottom: 20px;
+            font-size: 22px;
+            text-align: center;
         }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            font-weight: bold;
+            font-weight: 500;
             color: #555;
         }
-        .form-group input {
+        
+        .form-group input, .form-group select {
             width: 100%;
-            padding: 10px;
+            padding: 12px 15px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 16px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            box-sizing: border-box;
         }
-        .form-group input:focus {
+        
+        .form-group input:focus, .form-group select:focus {
+            border-color: #0066cc;
             outline: none;
-            border-color: #2196f3;
-            box-shadow: 0 0 5px rgba(33, 150, 243, 0.2);
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
         }
+        
+        /* 按钮样式 */
         .form-actions {
             display: flex;
             gap: 15px;
             justify-content: center;
             margin-top: 30px;
         }
+        
         .btn-primary {
-            background: #2196f3;
+            background-color: #0066cc;
             color: white;
             border: none;
             padding: 12px 30px;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 16px;
-            transition: background 0.3s;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.1s;
+            flex: 1;
         }
+        
         .btn-primary:hover {
-            background: #1976d2;
+            background-color: #0052a3;
         }
+        
         .btn-secondary {
-            background: #9e9e9e;
-            color: white;
+            background-color: #f1f1f1;
+            color: #555;
             border: none;
             padding: 12px 30px;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 16px;
-            transition: background 0.3s;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.1s;
+            flex: 1;
         }
+        
         .btn-secondary:hover {
-            background: #757575;
+            background-color: #e0e0e0;
         }
+        
+        .btn-primary:active, .btn-secondary:active {
+            transform: translateY(1px);
+        }
+        
         .form-note {
             text-align: center;
             margin-top: 20px;
             color: #666;
             font-size: 0.9rem;
         }
+        
+        /* 错误消息样式 */
         .error-message {
-            color: #f44336;
-            font-size: 0.9rem;
+            color: #e74c3c;
+            font-size: 14px;
             margin-top: 5px;
+            display: none;
         }
+        
+        /* 成功消息样式 */
         .success-message {
-            color: #4caf50;
-            font-size: 0.9rem;
-            margin-top: 5px;
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 6px;
             text-align: center;
+            font-weight: 500;
+            display: none;
+            margin-bottom: 20px;
+        }
+        
+        /* 访问验证表单样式 */
+        .verification-step {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 30px;
+        }
+        
+        .verification-note {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #0066cc;
+            color: #1565c0;
+        }
+        
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 6px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease-out;
+            max-width: 350px;
+        }
+        
+        .notification.success {
+            background-color: #4caf50;
+            color: white;
+        }
+        
+        .notification.error {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .notification.warning {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .register-container {
+                padding: 25px;
+                margin-top: 20px;
+                margin-left: 10px;
+                margin-right: 10px;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -116,27 +244,69 @@
 
     <main class="container">
         <div class="register-container">
-            <h2>学生注册</h2>
-            <div id="success-message" class="success-message" style="display: none;">
-                注册成功！正在跳转...
+            <!-- 访问权限验证步骤 -->
+            <div id="access-verification" class="verification-step">
+                <h2>访问权限验证</h2>
+                <p class="verification-note">本系统仅供25级中国矿业大学10班学生使用，请确认您的身份信息。</p>
+                <form id="verification-form">
+                    <div class="form-group">
+                        <label for="verification-school">学校 *</label>
+                        <select id="verification-school" required>
+                            <option value="">请选择您的学校</option>
+                            <option value="中国矿业大学">中国矿业大学</option>
+                            <option value="其他">其他学校</option>
+                        </select>
+                        <div id="school-error" class="error-message" style="display: none;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="verification-grade">年级 *</label>
+                        <select id="verification-grade" required>
+                            <option value="">请选择您的年级</option>
+                            <option value="25">25级</option>
+                            <option value="其他">其他年级</option>
+                        </select>
+                        <div id="grade-error" class="error-message" style="display: none;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="verification-class">班级 *</label>
+                        <select id="verification-class" required>
+                            <option value="">请选择您的班级</option>
+                            <option value="10">10班</option>
+                            <option value="其他">其他班级</option>
+                        </select>
+                        <div id="class-error" class="error-message" style="display: none;"></div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" id="verify-submit" class="btn-primary">验证身份</button>
+                        <button type="button" id="verify-cancel" class="btn-secondary">取消</button>
+                    </div>
+                </form>
             </div>
-            <form id="register-form">
-                <div class="form-group">
-                    <label for="reg-name">姓名 *</label>
-                    <input type="text" id="reg-name" placeholder="请输入您的真实姓名" required>
-                    <div id="name-error" class="error-message" style="display: none;"></div>
+            
+            <!-- 正式注册表单（初始隐藏） -->
+            <div id="registration-form-container" class="registration-step" style="display: none;">
+                <h2>学生注册</h2>
+                <div id="success-message" class="success-message" style="display: none;">
+                    注册成功！正在跳转...
                 </div>
-                <div class="form-group">
-                    <label for="reg-studentId">学号 *</label>
-                    <input type="text" id="reg-studentId" placeholder="请输入您的学号" required>
-                    <div id="studentId-error" class="error-message" style="display: none;"></div>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" id="reg-submit" class="btn-primary">注册</button>
-                    <button type="button" id="reg-cancel" class="btn-secondary">取消</button>
-                </div>
-                <p class="form-note">注：本系统仅供25-10矿大能动班级学生使用</p>
-            </form>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="reg-name">姓名 *</label>
+                        <input type="text" id="reg-name" placeholder="请输入您的真实姓名" required>
+                        <div id="name-error" class="error-message" style="display: none;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-studentId">学号 *</label>
+                        <input type="text" id="reg-studentId" placeholder="请输入您的学号（格式：25XXXXXXXX）" required>
+                        <div id="studentId-error" class="error-message" style="display: none;"></div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" id="reg-submit" class="btn-primary">注册</button>
+                        <button type="button" id="reg-cancel" class="btn-secondary">取消</button>
+                    </div>
+                    <p class="form-note">注：请输入真实的个人信息，系统将进行验证。</p>
+                </form>
+            </div>
         </div>
     </main>
 
@@ -155,7 +325,8 @@
             window.STORAGE_KEYS = window.STORAGE_KEYS || {
                 USER_INFO: 'carbon_app_user_info',
                 USER_LOGGED_IN: 'carbon_app_user_logged_in',
-                CLASS_RANKING: 'carbon_app_class_ranking'
+                CLASS_RANKING: 'carbon_app_class_ranking',
+                ACCESS_VERIFIED: 'carbon_app_access_verified'
             };
             
             // 简化的存储工具
@@ -176,6 +347,23 @@
             // 简化的通知函数
             window.utils.showNotification = window.utils.showNotification || function(message, type) {
                 console.log(type + ': ' + message);
+                // 创建一个简单的通知元素
+                const notification = document.createElement('div');
+                notification.className = 'notification ' + type;
+                notification.textContent = message;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 15px 20px;
+                    background: ${type === 'error' ? '#f44336' : type === 'success' ? '#4caf50' : '#ff9800'};
+                    color: white;
+                    border-radius: 4px;
+                    z-index: 1000;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
             };
             
             // 检查是否已登录，如果是则重定向到首页
@@ -184,33 +372,51 @@
                 window.location.href = 'index.html';
             }
             
-            // 表单验证函数
-            function validateName(name) {
-                // 不允许使用虚拟姓名
-                const fakeNames = ['张三', '李四', '王五', '赵六', '测试', 'demo'];
-                const normalizedName = name.trim();
-                
-                if (!normalizedName) {
-                    return { valid: false, message: '请输入姓名' };
-                }
-                
-                if (fakeNames.includes(normalizedName)) {
-                    return { valid: false, message: '请输入真实姓名，不允许使用测试姓名' };
-                }
-                
-                return { valid: true };
+            // 检查是否已通过身份验证
+            const isAccessVerified = window.utils.storage.get(window.STORAGE_KEYS.ACCESS_VERIFIED);
+            if (isAccessVerified) {
+                showRegistrationForm();
             }
             
-            function validateStudentId(studentId) {
-                const normalizedId = studentId.trim();
-                
-                if (!normalizedId) {
-                    return { valid: false, message: '请输入学号' };
+            // 显示注册表单，隐藏验证表单
+            function showRegistrationForm() {
+                document.getElementById('access-verification').style.display = 'none';
+                document.getElementById('registration-form-container').style.display = 'block';
+            }
+            
+            // 隐藏注册表单，显示验证表单
+            function showVerificationForm() {
+                document.getElementById('registration-form-container').style.display = 'none';
+                document.getElementById('access-verification').style.display = 'block';
+            }
+            
+            // 验证学校、年级和班级信息
+            function validateAccess(school, grade, classNum) {
+                if (!school) {
+                    return { valid: false, field: 'school', message: '请选择您的学校' };
                 }
                 
-                // 简单的学号格式验证（可以根据实际需求调整）
-                if (!/^\d{8,12}$/.test(normalizedId)) {
-                    return { valid: false, message: '请输入有效的学号（8-12位数字）' };
+                if (!grade) {
+                    return { valid: false, field: 'grade', message: '请选择您的年级' };
+                }
+                
+                if (!classNum) {
+                    return { valid: false, field: 'class', message: '请选择您的班级' };
+                }
+                
+                // 验证是否为25级中国矿业大学10班学生
+                const isAuthorized = (
+                    school === '中国矿业大学' && 
+                    grade === '25' && 
+                    classNum === '10'
+                );
+                
+                if (!isAuthorized) {
+                    return { 
+                        valid: false, 
+                        field: 'access', 
+                        message: '抱歉，您没有访问权限。本系统仅供25级中国矿业大学10班学生使用。'
+                    };
                 }
                 
                 return { valid: true };
@@ -229,12 +435,116 @@
                 errorElement.style.display = 'none';
             }
             
-            // 处理表单提交
+            // 隐藏所有错误消息
+            function hideAllErrors(formType) {
+                if (formType === 'verification') {
+                    hideError('school-error');
+                    hideError('grade-error');
+                    hideError('class-error');
+                } else if (formType === 'registration') {
+                    hideError('name-error');
+                    hideError('studentId-error');
+                }
+            }
+            
+            // 处理身份验证表单提交
+            document.getElementById('verification-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const school = document.getElementById('verification-school').value;
+                const grade = document.getElementById('verification-grade').value;
+                const classNum = document.getElementById('verification-class').value;
+                
+                // 隐藏所有错误
+                hideAllErrors('verification');
+                
+                // 验证访问权限
+                const accessValidation = validateAccess(school, grade, classNum);
+                
+                if (!accessValidation.valid) {
+                    if (accessValidation.field === 'access') {
+                        // 如果是访问权限错误，显示一个全局通知
+                        window.utils.showNotification(accessValidation.message, 'error');
+                        // 可以添加额外的安全措施，如记录尝试
+                        console.warn('未授权的访问尝试:', { school, grade, classNum });
+                    } else {
+                        // 显示具体字段的错误
+                        showError(accessValidation.field + '-error', accessValidation.message);
+                    }
+                    return;
+                }
+                
+                // 验证通过，保存验证状态并显示注册表单
+                window.utils.storage.set(window.STORAGE_KEYS.ACCESS_VERIFIED, true);
+                window.utils.showNotification('身份验证成功！请继续注册。', 'success');
+                showRegistrationForm();
+            });
+            
+            // 表单验证函数
+            function validateName(name) {
+                // 不允许使用虚拟姓名
+                const fakeNames = ['张三', '李四', '王五', '赵六', '测试', 'demo', 'test'];
+                const normalizedName = name.trim();
+                
+                if (!normalizedName) {
+                    return { valid: false, message: '请输入姓名' };
+                }
+                
+                // 检查是否包含虚拟姓名或其他可疑名称
+                const containsFakeName = fakeNames.some(fakeName => 
+                    normalizedName.includes(fakeName) || normalizedName.toLowerCase().includes(fakeName.toLowerCase())
+                );
+                
+                if (containsFakeName) {
+                    return { valid: false, message: '请输入真实姓名，不允许使用测试或虚构姓名' };
+                }
+                
+                // 检查姓名长度（2-10个字符）
+                if (normalizedName.length < 2 || normalizedName.length > 10) {
+                    return { valid: false, message: '姓名长度应在2-10个字符之间' };
+                }
+                
+                // 检查是否只包含中文字符
+                if (!/^[\u4e00-\u9fa5]+$/.test(normalizedName)) {
+                    return { valid: false, message: '姓名应只包含中文字符' };
+                }
+                
+                return { valid: true };
+            }
+            
+            function validateStudentId(studentId) {
+                const normalizedId = studentId.trim();
+                
+                if (!normalizedId) {
+                    return { valid: false, message: '请输入学号' };
+                }
+                
+                // 验证学号格式：以25开头（25级），后跟6-10位数字
+                // 假设学号格式为：年级(2位)+学院代码+班级+个人序号
+                if (!/^25\d{6,10}$/.test(normalizedId)) {
+                    return { valid: false, message: '请输入有效的25级学号（应以25开头的8-12位数字）' };
+                }
+                
+                // 可以添加更多验证逻辑，如检查班级编号是否为10
+                // 假设学号格式为：25+学院代码+班级(2位)+个人序号
+                // 这里检查第5-6位是否为10（10班）
+                if (normalizedId.length >= 6 && normalizedId.substring(4, 6) !== '10') {
+                    // 只显示提示，不完全阻止注册（因为学号格式可能有变化）
+                    window.utils.showNotification('注意：您的学号可能不属于10班，请确认您的班级信息。', 'warning');
+                }
+                
+                return { valid: true };
+            }
+            
+            // 处理注册表单提交
             document.getElementById('register-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
                 const name = document.getElementById('reg-name').value;
                 const studentId = document.getElementById('reg-studentId').value;
+                
+                // 隐藏所有错误
+                hideAllErrors('registration');
                 
                 // 验证输入
                 const nameValidation = validateName(name);
@@ -245,15 +555,11 @@
                 if (!nameValidation.valid) {
                     showError('name-error', nameValidation.message);
                     isValid = false;
-                } else {
-                    hideError('name-error');
                 }
                 
                 if (!idValidation.valid) {
                     showError('studentId-error', idValidation.message);
                     isValid = false;
-                } else {
-                    hideError('studentId-error');
                 }
                 
                 if (isValid) {
@@ -261,9 +567,13 @@
                     const userInfo = {
                         name: name.trim(),
                         studentId: studentId.trim(),
+                        grade: '25',  // 添加年级信息
+                        class: '10',  // 添加班级信息
+                        school: '中国矿业大学',  // 添加学校信息
                         totalCarbon: 0,
                         joinDate: new Date().toISOString(),
-                        lastUpdated: new Date().toISOString()
+                        lastUpdated: new Date().toISOString(),
+                        isVerified: true  // 标记为已验证的用户
                     };
                     
                     // 保存用户信息
@@ -296,16 +606,25 @@
                         ranking[userIndex] = {
                             ...ranking[userIndex],
                             name: userInfo.name,
+                            studentId: userInfo.studentId,
+                            grade: userInfo.grade,
+                            class: userInfo.class,
+                            school: userInfo.school,
                             totalCarbon: userInfo.totalCarbon || 0,
-                            lastUpdated: new Date().toISOString()
+                            lastUpdated: new Date().toISOString(),
+                            isVerified: userInfo.isVerified
                         };
                     } else {
                         // 添加新用户
                         ranking.push({
                             name: userInfo.name,
                             studentId: userInfo.studentId,
+                            grade: userInfo.grade,
+                            class: userInfo.class,
+                            school: userInfo.school,
                             totalCarbon: userInfo.totalCarbon || 0,
-                            lastUpdated: new Date().toISOString()
+                            lastUpdated: new Date().toISOString(),
+                            isVerified: userInfo.isVerified
                         });
                     }
                     
@@ -316,12 +635,32 @@
                 }
             }
             
-            // 取消按钮事件
-            document.getElementById('reg-cancel').addEventListener('click', function() {
+            // 取消按钮事件 - 验证表单
+            document.getElementById('verify-cancel').addEventListener('click', function() {
                 window.location.href = 'index.html';
             });
             
+            // 取消按钮事件 - 注册表单
+            document.getElementById('reg-cancel').addEventListener('click', function() {
+                // 返回到验证表单
+                showVerificationForm();
+            });
+            
             // 添加输入框事件监听，输入时隐藏错误消息
+            // 验证表单输入监听
+            document.getElementById('verification-school').addEventListener('input', function() {
+                hideError('school-error');
+            });
+            
+            document.getElementById('verification-grade').addEventListener('input', function() {
+                hideError('grade-error');
+            });
+            
+            document.getElementById('verification-class').addEventListener('input', function() {
+                hideError('class-error');
+            });
+            
+            // 注册表单输入监听
             document.getElementById('reg-name').addEventListener('input', function() {
                 hideError('name-error');
             });

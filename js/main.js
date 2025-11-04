@@ -215,7 +215,12 @@ function initializePage() {
     try {
         // 获取当前页面路径
         const currentPath = window.location.pathname;
-        const pageName = currentPath.split('/').pop() || 'index.html';
+        let pageName = currentPath.split('/').pop() || 'index.html';
+        
+        // 确保页面名称包含正确的扩展名，处理省略.html的情况
+        if (!pageName.includes('.html') && pageName !== '') {
+            pageName = pageName + '.html';
+        }
         console.log('当前页面:', pageName);
         
         // 初始化导航 - 即使失败也不影响主要功能
@@ -261,7 +266,7 @@ function initializePage() {
         // 根据页面类型初始化相应功能
         try {
             // 支持直接访问根路径和计算器页面
-            if (pageName === 'index.html' || pageName === '' || pageName.includes('calculator.html')) {
+            if (pageName === 'index.html' || pageName === '' || pageName.includes('calculator')) {
                 console.log('初始化计算器页面');
                 if (typeof initCalculatorPage === 'function') {
                     initCalculatorPage();
@@ -271,25 +276,30 @@ function initializePage() {
                 }
             } 
             // 记录页面
-            else if (pageName.includes('records.html')) {
+            else if (pageName.includes('records')) {
                 console.log('初始化记录页面');
                 if (typeof initRecordsPage === 'function') {
                     initRecordsPage();
                 }
             }
             // 排名页面
-            else if (pageName.includes('ranking.html')) {
+            else if (pageName.includes('ranking')) {
                 console.log('初始化排名页面');
                 if (typeof initRankingPage === 'function') {
                     initRankingPage();
                 }
             }
             // 管理员页面
-            else if (pageName.includes('admin.html')) {
+            else if (pageName.includes('admin')) {
                 console.log('初始化管理员页面');
                 if (typeof initAdminPage === 'function') {
                     initAdminPage();
                 }
+            }
+            // 注册页面
+            else if (pageName.includes('register')) {
+                console.log('初始化注册页面');
+                // 注册页面的逻辑在register.html中独立处理
             }
         } catch (pageInitError) {
             console.error('页面功能初始化出错:', pageInitError);
