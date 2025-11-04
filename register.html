@@ -237,6 +237,8 @@
                 <li><a href="calculator.html">碳足迹计算</a></li>
                 <li><a href="records.html">个人记录</a></li>
                 <li><a href="ranking.html">班级排名</a></li>
+                <li><a href="register.html" id="register-link">注册</a></li>
+                <li><a href="#" id="logout-button" style="display:none;">退出登录</a></li>
                 <li><a href="admin.html" class="admin-link">管理员登录</a></li>
             </ul>
         </div>
@@ -244,47 +246,8 @@
 
     <main class="container">
         <div class="register-container">
-            <!-- 访问权限验证步骤 -->
-            <div id="access-verification" class="verification-step">
-                <h2>访问权限验证</h2>
-                <p class="verification-note">本系统仅供25级中国矿业大学10班学生使用，请确认您的身份信息。</p>
-                <form id="verification-form">
-                    <div class="form-group">
-                        <label for="verification-school">学校 *</label>
-                        <select id="verification-school" required>
-                            <option value="">请选择您的学校</option>
-                            <option value="中国矿业大学">中国矿业大学</option>
-                            <option value="其他">其他学校</option>
-                        </select>
-                        <div id="school-error" class="error-message" style="display: none;"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="verification-grade">年级 *</label>
-                        <select id="verification-grade" required>
-                            <option value="">请选择您的年级</option>
-                            <option value="25">25级</option>
-                            <option value="其他">其他年级</option>
-                        </select>
-                        <div id="grade-error" class="error-message" style="display: none;"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="verification-class">班级 *</label>
-                        <select id="verification-class" required>
-                            <option value="">请选择您的班级</option>
-                            <option value="10">10班</option>
-                            <option value="其他">其他班级</option>
-                        </select>
-                        <div id="class-error" class="error-message" style="display: none;"></div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" id="verify-submit" class="btn-primary">验证身份</button>
-                        <button type="button" id="verify-cancel" class="btn-secondary">取消</button>
-                    </div>
-                </form>
-            </div>
-            
-            <!-- 正式注册表单（初始隐藏） -->
-            <div id="registration-form-container" class="registration-step" style="display: none;">
+            <!-- 用户信息登记界面 -->
+            <div id="registration-form-container" class="registration-step" style="display:block;">
                 <h2>学生注册</h2>
                 <div id="success-message" class="success-message" style="display: none;">
                     注册成功！正在跳转...
@@ -325,8 +288,7 @@
             window.STORAGE_KEYS = window.STORAGE_KEYS || {
                 USER_INFO: 'carbon_app_user_info',
                 USER_LOGGED_IN: 'carbon_app_user_logged_in',
-                CLASS_RANKING: 'carbon_app_class_ranking',
-                ACCESS_VERIFIED: 'carbon_app_access_verified'
+                CLASS_RANKING: 'carbon_app_class_ranking'
             };
             
             // 简化的存储工具
@@ -372,56 +334,6 @@
                 window.location.href = 'index.html';
             }
             
-            // 检查是否已通过身份验证
-            const isAccessVerified = window.utils.storage.get(window.STORAGE_KEYS.ACCESS_VERIFIED);
-            if (isAccessVerified) {
-                showRegistrationForm();
-            }
-            
-            // 显示注册表单，隐藏验证表单
-            function showRegistrationForm() {
-                document.getElementById('access-verification').style.display = 'none';
-                document.getElementById('registration-form-container').style.display = 'block';
-            }
-            
-            // 隐藏注册表单，显示验证表单
-            function showVerificationForm() {
-                document.getElementById('registration-form-container').style.display = 'none';
-                document.getElementById('access-verification').style.display = 'block';
-            }
-            
-            // 验证学校、年级和班级信息
-            function validateAccess(school, grade, classNum) {
-                if (!school) {
-                    return { valid: false, field: 'school', message: '请选择您的学校' };
-                }
-                
-                if (!grade) {
-                    return { valid: false, field: 'grade', message: '请选择您的年级' };
-                }
-                
-                if (!classNum) {
-                    return { valid: false, field: 'class', message: '请选择您的班级' };
-                }
-                
-                // 验证是否为25级中国矿业大学10班学生
-                const isAuthorized = (
-                    school === '中国矿业大学' && 
-                    grade === '25' && 
-                    classNum === '10'
-                );
-                
-                if (!isAuthorized) {
-                    return { 
-                        valid: false, 
-                        field: 'access', 
-                        message: '抱歉，您没有访问权限。本系统仅供25级中国矿业大学10班学生使用。'
-                    };
-                }
-                
-                return { valid: true };
-            }
-            
             // 显示错误消息
             function showError(elementId, message) {
                 const errorElement = document.getElementById(elementId);
@@ -436,49 +348,10 @@
             }
             
             // 隐藏所有错误消息
-            function hideAllErrors(formType) {
-                if (formType === 'verification') {
-                    hideError('school-error');
-                    hideError('grade-error');
-                    hideError('class-error');
-                } else if (formType === 'registration') {
-                    hideError('name-error');
-                    hideError('studentId-error');
-                }
+            function hideAllErrors() {
+                hideError('name-error');
+                hideError('studentId-error');
             }
-            
-            // 处理身份验证表单提交
-            document.getElementById('verification-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const school = document.getElementById('verification-school').value;
-                const grade = document.getElementById('verification-grade').value;
-                const classNum = document.getElementById('verification-class').value;
-                
-                // 隐藏所有错误
-                hideAllErrors('verification');
-                
-                // 验证访问权限
-                const accessValidation = validateAccess(school, grade, classNum);
-                
-                if (!accessValidation.valid) {
-                    if (accessValidation.field === 'access') {
-                        // 如果是访问权限错误，显示一个全局通知
-                        window.utils.showNotification(accessValidation.message, 'error');
-                        // 可以添加额外的安全措施，如记录尝试
-                        console.warn('未授权的访问尝试:', { school, grade, classNum });
-                    } else {
-                        // 显示具体字段的错误
-                        showError(accessValidation.field + '-error', accessValidation.message);
-                    }
-                    return;
-                }
-                
-                // 验证通过，保存验证状态并显示注册表单
-                window.utils.storage.set(window.STORAGE_KEYS.ACCESS_VERIFIED, true);
-                window.utils.showNotification('身份验证成功！请继续注册。', 'success');
-                showRegistrationForm();
-            });
             
             // 表单验证函数
             function validateName(name) {
@@ -544,7 +417,7 @@
                 const studentId = document.getElementById('reg-studentId').value;
                 
                 // 隐藏所有错误
-                hideAllErrors('registration');
+                hideAllErrors();
                 
                 // 验证输入
                 const nameValidation = validateName(name);
@@ -591,6 +464,11 @@
                         window.location.href = 'index.html';
                     }, 2000);
                 }
+            });
+            
+            // 处理取消按钮点击事件
+            document.getElementById('reg-cancel').addEventListener('click', function() {
+                window.location.href = 'index.html';
             });
             
             // 更新班级排名

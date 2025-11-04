@@ -8,7 +8,8 @@ window.STORAGE_KEYS = window.STORAGE_KEYS || {
     USER_INFO: 'carbon_app_user_info',
     USER_RECORDS: 'carbon_app_user_records',
     CLASS_RANKING: 'carbon_app_class_ranking',
-    ADMIN_SESSION: 'carbon_app_admin_session'
+    ADMIN_SESSION: 'carbon_app_admin_session',
+    USER_LOGGED_IN: 'carbon_app_user_logged_in'
 };
 
 // 确保EMISSION_FACTORS存在
@@ -61,6 +62,14 @@ window.utils.storage = window.utils.storage || {
     set: function(key, value) {
         try {
             localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (e) {
+            return false;
+        }
+    },
+    remove: function(key) {
+        try {
+            localStorage.removeItem(key);
             return true;
         } catch (e) {
             return false;
@@ -186,6 +195,21 @@ function initUserInfo() {
         const userInfo = window.utils?.storage?.get ? 
                          window.utils.storage.get(window.STORAGE_KEYS.USER_INFO) : null;
         
+        // 检查登录状态
+        let isLoggedIn = window.utils?.storage?.get ? 
+                        window.utils.storage.get(window.STORAGE_KEYS.USER_LOGGED_IN) : false;
+        
+        // 如果有用户信息但未标记为登录，自动标记为登录
+        if (userInfo && !isLoggedIn) {
+            if (window.utils?.storage?.set) {
+                window.utils.storage.set(window.STORAGE_KEYS.USER_LOGGED_IN, true);
+                isLoggedIn = true;
+            }
+        }
+        
+        // 更新导航按钮显示
+        updateNavigationButtons(isLoggedIn);
+        
         // 只显示注册提示，不强制要求注册
         if (!userInfo && !isAdminPage()) {
             setTimeout(() => {
@@ -199,12 +223,56 @@ function initUserInfo() {
     }
 }
 
+// 更新导航按钮显示状态
+function updateNavigationButtons(isLoggedIn) {
+    try {
+        const registerLink = document.getElementById('register-link');
+        const logoutButton = document.getElementById('logout-button');
+        
+        if (registerLink && logoutButton) {
+            if (isLoggedIn) {
+                registerLink.style.display = 'none';
+                logoutButton.style.display = 'block';
+            } else {
+                registerLink.style.display = 'block';
+                logoutButton.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('更新导航按钮出错:', error);
+    }
+}
+
+// 初始化导航
+function initNavigation() {
+    try {
+        // 为退出登录按钮添加事件监听
+        const logoutButton = document.getElementById('logout-button');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('确定要退出登录吗？')) {
+                    logoutUser();
+                }
+            });
+        }
+    } catch (error) {
+        console.error('初始化导航出错:', error);
+    }
+}
+
 // 确保页面加载完成后初始化
 window.addEventListener('DOMContentLoaded', function() {
     console.log('页面加载完成，开始初始化');
     
     // 启动依赖等待机制，确保所有必要的模块都已加载
     waitForDependencies();
+    
+    // 初始化导航
+    initNavigation();
+    
+    // 初始化用户信息
+    initUserInfo();
     
     // 同时开始页面初始化流程
     initializePage();
@@ -299,7 +367,11 @@ function initializePage() {
             // 注册页面
             else if (pageName.includes('register')) {
                 console.log('初始化注册页面');
-                // 注册页面的逻辑在register.html中独立处理
+                if (typeof initRegisterPage === 'function') {
+                    initRegisterPage();
+                } else {
+                    console.warn('initRegisterPage函数未定义');
+                }
             }
         } catch (pageInitError) {
             console.error('页面功能初始化出错:', pageInitError);
@@ -1148,6 +1220,37 @@ function loadClassRanking() {
                 }
             });
         }
+    }
+}
+
+// 初始化注册页面
+function initRegisterPage() {
+    try {
+        // 检查用户是否已登录
+        const isLoggedIn = window.utils?.storage?.get ? 
+                          window.utils.storage.get(window.STORAGE_KEYS.USER_LOGGED_IN) : false;
+        
+        if (isLoggedIn) {
+            // 如果用户已登录，显示提示并提供跳转到首页的选项
+            const contentArea = document.querySelector('.container');
+            if (contentArea) {
+                contentArea.innerHTML = `
+                    <div style="text-align: center; padding: 50px 0;">
+                        <h2>您已登录</h2>
+                        <p>请先退出当前账号再注册新账号</p>
+                        <button id="redirect-to-home" style="margin-top: 20px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            返回首页
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('redirect-to-home').addEventListener('click', function() {
+                    window.location.href = 'index.html';
+                });
+            }
+        }
+    } catch (error) {
+        console.error('初始化注册页面出错:', error);
     }
 }
 
