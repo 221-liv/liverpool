@@ -11,11 +11,232 @@ if (!window.STORAGE_KEYS) {
     };
 }
 
-// 继续添加Calculator类的方法
+// 页面加载和初始化已完成
+// 以下是窗口级别的错误处理
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error('未捕获的错误:', { message, source, lineno, colno, error });
+    return true; // 防止默认处理
+};
+
+// 监听Promise错误
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('未处理的Promise拒绝:', event.reason);
+    event.preventDefault();
+});
+
+// 确保TRANSPORT_OPTIONS存在
+if (!window.TRANSPORT_OPTIONS) {
+    window.TRANSPORT_OPTIONS = [];
+}
+
+// 确保DIET_OPTIONS存在
+if (!window.DIET_OPTIONS) {
+    window.DIET_OPTIONS = [];
+}
+
+// 确保工具函数存在
+if (!window.utils) {
+    window.utils = {
+        storage: {
+            get: function(key) {
+                try {
+                    const item = localStorage.getItem(key);
+                    return item ? JSON.parse(item) : null;
+                } catch (error) {
+                    console.error('Error reading from localStorage:', error);
+                    return null;
+                }
+            },
+            set: function(key, value) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                    return true;
+                } catch (error) {
+                    console.error('Error writing to localStorage:', error);
+                    return false;
+                }
+            }
+        },
+        formatCarbonEmission: function(amount) {
+            if (amount === 0) return '0 kg';
+            if (amount < 1) {
+                return (amount * 1000).toFixed(2) + ' g';
+            } else if (amount < 1000) {
+                return amount.toFixed(2) + ' kg';
+            } else {
+                return (amount / 1000).toFixed(2) + ' t';
+            }
+        },
+        generateId: function() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+    };
+}
+
+// 计算器类
+class Calculator {
+    constructor() {
+        this.transportOptions = window.TRANSPORT_OPTIONS || [];
+        this.dietOptions = window.DIET_OPTIONS || [];
+        this.currentTab = 'transport'; // 默认为交通方式标签
+    }
+
+    // 初始化页面
+    init() {
+        this.setupTabs();
+        this.populateDropdowns();
+        this.setupEventListeners();
+    }
+
+    // 设置标签切换
+    setupTabs() {
+        const transportTab = document.getElementById('transport-tab');
+        const foodTab = document.getElementById('food-tab');
+        const transportSection = document.getElementById('transport-section');
+        const foodSection = document.getElementById('food-section');
+        const transportKnowledge = document.getElementById('transport-knowledge');
+        const foodKnowledge = document.getElementById('food-knowledge');
+
+        if (transportTab && foodTab) {
+            transportTab.addEventListener('click', () => {
+                this.switchTab('transport');
+                if (transportSection) transportSection.style.display = 'block';
+                if (foodSection) foodSection.style.display = 'none';
+                if (transportKnowledge) transportKnowledge.style.display = 'block';
+                if (foodKnowledge) foodKnowledge.style.display = 'none';
+                transportTab.classList.add('active');
+                foodTab.classList.remove('active');
+            });
+
+            foodTab.addEventListener('click', () => {
+                this.switchTab('food');
+                if (transportSection) transportSection.style.display = 'none';
+                if (foodSection) foodSection.style.display = 'block';
+                if (transportKnowledge) transportKnowledge.style.display = 'none';
+                if (foodKnowledge) foodKnowledge.style.display = 'block';
+                foodTab.classList.add('active');
+                transportTab.classList.remove('active');
+            });
+        }
+    }
+
+    // 切换标签
+    switchTab(tab) {
+        this.currentTab = tab;
+        // 重置结果显示区域
+        const resultsSection = document.getElementById('results-section');
+        if (resultsSection) {
+            resultsSection.style.display = 'none';
+        }
+    }
+
+    // 填充下拉选择框
+    populateDropdowns() {
+        // 填充交通方式下拉框
+        this.populateDropdown('transport-type-1', this.transportOptions);
+        this.populateDropdown('transport-type-2', this.transportOptions);
+        
+        // 填充食品类别下拉框
+        this.populateDropdown('food-type-1', this.dietOptions);
+        this.populateDropdown('food-type-2', this.dietOptions);
+    }
+
+    // 填充单个下拉框
+    populateDropdown(elementId, options) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        element.innerHTML = '';
+        options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value;
+            optionElement.textContent = option.label;
+            element.appendChild(optionElement);
+        });
+    }
+
+    // 设置事件监听器
+    setupEventListeners() {
+        // 计算按钮事件
+        const calculateBtn = document.getElementById('calculate-btn');
+        if (calculateBtn) {
+            calculateBtn.addEventListener('click', this.handleCalculate.bind(this));
+        }
+
+        // 保存记录按钮事件
+        const saveBtn = document.getElementById('save-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', this.handleSaveRecord.bind(this));
+        }
+
+        // 监听食品类型变化，显示牛肉碳足迹构成分析
+        const foodType1 = document.getElementById('food-type-1');
+        const foodType2 = document.getElementById('food-type-2');
+        const beefBreakdown = document.getElementById('beef-breakdown');
+
+        if (foodType1 && foodType2 && beefBreakdown) {
+            const showBeefBreakdown = () => {
+                const show = (foodType1.value === 'beef' || foodType2.value === 'beef');
+                beefBreakdown.style.display = show ? 'block' : 'none';
+                if (show) {
+                    this.showBeefBreakdown();
+                }
+            };
+
+            foodType1.addEventListener('change', showBeefBreakdown);
+            foodType2.addEventListener('change', showBeefBreakdown);
+        }
+    }
+
+    // 显示牛肉碳足迹构成分析
+    showBeefBreakdown() {
+        const breakdownChart = document.querySelector('.breakdown-chart');
+        if (!breakdownChart) return;
+
+        const breakdown = window.BEEF_EMISSION_BREAKDOWN || {
+            entericFermentation: 40,
+            feedProduction: 26,
+            manureManagement: 10,
+            farmEnergyUse: 7,
+            processing: 4,
+            transportation: 5,
+            retail: 3,
+            other: 5
+        };
+
+        const labels = {
+            entericFermentation: '肠道发酵 (40%)',
+            feedProduction: '饲料生产 (26%)',
+            manureManagement: '粪便管理 (10%)',
+            farmEnergyUse: '农场能源使用 (7%)',
+            processing: '加工处理 (4%)',
+            transportation: '运输配送 (5%)',
+            retail: '零售环节 (3%)',
+            other: '其他 (5%)'
+        };
+
+        // 创建简单的可视化
+        let html = '<div class="breakdown-bars">';
+        for (const [key, value] of Object.entries(breakdown)) {
+            html += `
+                <div class="breakdown-item">
+                    <div class="breakdown-label">${labels[key]}</div>
+                    <div class="breakdown-bar" style="width: ${value}%;">
+                        <div class="breakdown-value">${value}%</div>
+                    </div>
+                </div>
+            `;
+        }
+        html += '</div>';
+        breakdownChart.innerHTML = html;
+    }
+};
+
+// 扩展Calculator类的原型方法
 Calculator.prototype.handleCalculate = function() {
-    const calculator = window.carbonCalculator || new (function() {
-        // 降级的计算器实现
-        this.compareEmissions = function(option1, option2) {
+    // 创建降级计算器实现
+    const createFallbackCalculator = () => ({
+        compareEmissions: function(option1, option2) {
             // 使用常量中的排放系数进行计算
             const getEmissionFactor = (type, item) => {
                 if (type === 'transportation') {
@@ -36,9 +257,8 @@ Calculator.prototype.handleCalculate = function() {
                 savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
                 lowerOption: emission1 < emission2 ? 'option1' : 'option2'
             };
-        };
-
-        this.getCarbonReductionTips = function(carbonAmount) {
+        },
+        getCarbonReductionTips: function(carbonAmount) {
             const tips = [];
             if (carbonAmount > 10) {
                 tips.push('选择更环保的选项可以显著减少碳排放');
@@ -47,12 +267,13 @@ Calculator.prototype.handleCalculate = function() {
                 tips.push('您的选择已经很环保，继续保持！');
             }
             return tips;
-        };
-
-        this.calculateEquivalentTrees = function(carbonAmount) {
+        },
+        calculateEquivalentTrees: function(carbonAmount) {
             return carbonAmount / 21.77; // 一棵树一年吸收约21.77公斤CO2
-        };
-    })();
+        }
+    });
+    
+    const calculator = window.carbonCalculator || createFallbackCalculator();
 
     try {
         let option1, option2;
@@ -186,7 +407,8 @@ Calculator.prototype.handleSaveRecord = function() {
         }
 
         // 获取备注信息
-        const notes = document.getElementById('record-notes').value || '';
+        const notesElement = document.getElementById('record-notes');
+        const notes = notesElement ? notesElement.value || '' : '';
 
         // 创建记录对象
         const record = {
@@ -198,6 +420,7 @@ Calculator.prototype.handleSaveRecord = function() {
             notes: notes,
             timestamp: new Date().toISOString()
         };
+        console.log('准备保存记录:', record);
 
         // 保存记录
         const calculator = window.carbonCalculator;
@@ -225,22 +448,30 @@ Calculator.prototype.handleSaveRecord = function() {
 
 Calculator.prototype.fallbackSaveRecord = function(record) {
     try {
+        // 安全地获取window.utils和window.STORAGE_KEYS
+        const utils = window.utils || {};
+        const STORAGE_KEYS = window.STORAGE_KEYS || { USER_RECORDS: 'carbon_footprint_records' };
+        
         // 获取现有记录
-        const records = window.utils?.storage?.get(STORAGE_KEYS.USER_RECORDS) || [];
+        const records = utils.storage?.get(STORAGE_KEYS.USER_RECORDS) || [];
+        console.log('现有记录数量:', records.length);
         
         // 添加ID
-        record.id = window.utils?.generateId() || Date.now().toString();
+        record.id = utils.generateId ? utils.generateId() : Date.now().toString();
         
         // 添加到记录列表
         records.unshift(record);
+        console.log('添加记录后数量:', records.length);
         
         // 限制记录数量
         if (records.length > 100) {
             records.splice(100);
+            console.log('已限制记录数量为100条');
         }
         
         // 保存回localStorage
-        const saved = window.utils?.storage?.set(STORAGE_KEYS.USER_RECORDS, records);
+        const saved = utils.storage?.set(STORAGE_KEYS.USER_RECORDS, records);
+        console.log('记录保存状态:', saved);
         
         if (saved) {
             alert('记录保存成功！');
