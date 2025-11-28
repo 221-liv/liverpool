@@ -811,16 +811,24 @@ function switchTab(type) {
         // 根据类型显示对应内容
         if (type === 'transportation') {
             if (transportTab) transportTab.classList.add('active');
-            if (transportSection) transportSection.classList.add('active');
+            if (transportSection) {
+                transportSection.classList.add('active');
+                transportSection.style.display = 'block';
+            }
             if (transportKnowledge) transportKnowledge.classList.add('active');
             if (foodKnowledge) foodKnowledge.style.display = 'none';
             if (transportKnowledge) transportKnowledge.style.display = 'block';
+            if (foodSection) foodSection.style.display = 'none';
         } else if (type === 'food') {
             if (foodTab) foodTab.classList.add('active');
-            if (foodSection) foodSection.classList.add('active');
+            if (foodSection) {
+                foodSection.classList.add('active');
+                foodSection.style.display = 'block';
+            }
             if (foodKnowledge) foodKnowledge.classList.add('active');
             if (transportKnowledge) transportKnowledge.style.display = 'none';
             if (foodKnowledge) foodKnowledge.style.display = 'block';
+            if (transportSection) transportSection.style.display = 'none';
         }
     } catch (switchError) {
         console.error('切换标签页出错:', switchError);
