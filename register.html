@@ -513,29 +513,18 @@
                 }
             }
             
-            // 取消按钮事件 - 验证表单
-            document.getElementById('verify-cancel').addEventListener('click', function() {
+            // 取消按钮事件 - 注册表单
+            document.getElementById('reg-cancel').addEventListener('click', function() {
                 window.location.href = 'index.html';
             });
             
-            // 取消按钮事件 - 注册表单
-            document.getElementById('reg-cancel').addEventListener('click', function() {
-                // 返回到验证表单
-                showVerificationForm();
-            });
-            
             // 添加输入框事件监听，输入时隐藏错误消息
-            // 验证表单输入监听
-            document.getElementById('verification-school').addEventListener('input', function() {
-                hideError('school-error');
+            // 注册表单输入监听
+            document.getElementById('reg-name').addEventListener('input', function() {
+                hideError('name-error');
             });
-            
-            document.getElementById('verification-grade').addEventListener('input', function() {
-                hideError('grade-error');
-            });
-            
-            document.getElementById('verification-class').addEventListener('input', function() {
-                hideError('class-error');
+            document.getElementById('reg-studentId').addEventListener('input', function() {
+                hideError('studentId-error');
             });
             
             // 注册表单输入监听

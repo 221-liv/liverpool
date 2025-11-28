@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 碳足迹计算器</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .login-card {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-card h2 {
+            color: #2e7d32;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #2e7d32;
+        }
+        .class-note {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        .error-message {
+            color: #f44336;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>碳足迹计算器</h1>
+            <div class="class-info">25-10矿大能动</div>
+        </div>
+    </header>
+
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="index.html">首页</a></li>
+                <li><a href="calculator.html">计算工具</a></li>
+                <li><a href="ranking.html">排行榜</a></li>
+                <li><a href="records.html">记录查询</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="login-container">
+        <div class="login-card">
+            <h2>用户登录</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="name">姓名</label>
+                    <input type="text" id="name" placeholder="请输入您的姓名" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentId">学号</label>
+                    <input type="text" id="studentId" placeholder="请输入您的学号" required>
+                </div>
+                <p class="class-note">仅供25能动—10班同学可用</p>
+                <div id="error-message" class="error-message"></div>
+                <button type="submit" class="btn-primary btn-login">登录</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>© 2023 25-10矿大能动 - 碳足迹计算器</p>
+            <p>本网站旨在提高低碳环保意识，为碳减排贡献力量</p>
+        </div>
+    </footer>
+
+    <script src="js/utils.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查本地存储中是否有STORAGE_KEYS对象
+            if (!window.STORAGE_KEYS) {
+                window.STORAGE_KEYS = {
+                    USER_INFO: 'userInfo',
+                    USER_RECORDS: 'userRecords',
+                    CLASS_RANKING: 'classRanking'
+                };
+            }
+
+            const loginForm = document.getElementById('login-form');
+            const errorMessage = document.getElementById('error-message');
+
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('name').value.trim();
+                const studentId = document.getElementById('studentId').value.trim();
+                
+                // 简单验证
+                if (!name || !studentId) {
+                    showError('请填写完整信息');
+                    return;
+                }
+                
+                // 保存用户信息到本地存储
+                const userInfo = {
+                    name: name,
+                    studentId: studentId,
+                    lastLogin: new Date().toISOString()
+                };
+                
+                // 尝试使用utils.storage保存，如果不可用则使用localStorage
+                try {
+                    if (utils && utils.storage && typeof utils.storage.set === 'function') {
+                        utils.storage.set(STORAGE_KEYS.USER_INFO, userInfo);
+                    } else {
+                        localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(userInfo));
+                    }
+                    
+                    // 登录成功，跳转到首页
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    console.error('保存用户信息失败:', error);
+                    showError('登录失败，请重试');
+                }
+            });
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                
+                // 3秒后隐藏错误信息
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
