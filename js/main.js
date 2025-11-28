@@ -484,23 +484,61 @@ Calculator.prototype.fallbackSaveRecord = function(record) {
     }
 };
 
-// 页面加载完成后初始化
-window.addEventListener('DOMContentLoaded', function() {
+// 初始化页面函数 - 处理URL省略.html的情况
+function initializePage() {
     try {
-        // 确保Calculator类存在
-        if (window.Calculator) {
-            const app = new window.Calculator();
-            app.init();
+        // 获取当前页面路径，去除查询参数和哈希
+        const pathname = window.location.pathname;
+        
+        // 提取页面名称，处理省略.html的情况
+        let pageName = pathname.split('/').pop();
+        
+        // 如果没有.html后缀，添加它（但只在需要时）
+        if (!pageName.includes('.')) {
+            // 这是为了页面识别，不需要实际重定向
+            console.log(`识别到页面: ${pageName}, 假定是 ${pageName}.html`);
         } else {
-            // 创建临时的Calculator实例
-            const app = new Calculator();
-            app.init();
+            // 提取不带扩展名的页面名称
+            pageName = pageName.split('.')[0];
         }
-        console.log('计算器初始化完成');
+        
+        console.log(`正在初始化页面: ${pageName}`);
+        
+        // 根据页面类型执行相应的初始化
+        switch (pageName) {
+            case 'calculator':
+                // 确保Calculator类存在
+                if (window.Calculator) {
+                    const app = new window.Calculator();
+                    app.init();
+                } else {
+                    // 创建临时的Calculator实例
+                    const app = new Calculator();
+                    app.init();
+                }
+                break;
+            // 可以添加其他页面的初始化逻辑
+            default:
+                console.log(`没有针对 ${pageName} 的特定初始化逻辑`);
+                // 对于其他页面，也尝试初始化计算器（如果需要）
+                if (typeof Calculator === 'function') {
+                    try {
+                        const app = new Calculator();
+                        app.init();
+                    } catch (e) {
+                        console.log(`在 ${pageName} 页面初始化计算器失败（可能不需要）:`, e);
+                    }
+                }
+        }
+        
+        console.log('页面初始化完成');
     } catch (error) {
-        console.error('计算器初始化失败:', error);
+        console.error('页面初始化失败:', error);
     }
-});
+}
+
+// 页面加载完成后初始化
+window.addEventListener('DOMContentLoaded', initializePage);
 
 // 确保EMISSION_FACTORS存在
 if (!window.EMISSION_FACTORS) {
