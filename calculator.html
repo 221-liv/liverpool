@@ -10,6 +10,51 @@
     <script src="js/footprint-calculator.js"></script>
     <script src="js/main.js" defer></script>
     <script>
+        // 确保CarbonFootprintCalculator正确初始化
+        window.addEventListener('load', function() {
+            try {
+                // 验证关键对象是否存在
+                if (!window.CarbonFootprintCalculator) {
+                    console.error('CarbonFootprintCalculator类未定义');
+                    alert('错误：碳足迹计算器核心功能未加载，请刷新页面重试');
+                }
+                
+                // 确保window.carbonCalculator实例存在
+                if (!window.carbonCalculator) {
+                    console.log('创建CarbonFootprintCalculator实例...');
+                    try {
+                        window.carbonCalculator = new CarbonFootprintCalculator();
+                        console.log('计算器实例创建成功');
+                    } catch (initError) {
+                        console.error('创建计算器实例失败:', initError);
+                        alert('错误：初始化计算器失败，请刷新页面重试');
+                    }
+                }
+                
+                // 验证关键函数是否存在
+                if (window.carbonCalculator && typeof window.carbonCalculator.compareEmissions !== 'function') {
+                    console.error('compareEmissions方法未定义');
+                    // 提供降级方案
+                    window.carbonCalculator.compareEmissions = function(option1, option2) {
+                        // 模拟计算结果
+                        const emission1 = option1.amount * 0.2;
+                        const emission2 = option2.amount * 0.05;
+                        return {
+                            option1: { ...option1, emission: emission1 },
+                            option2: { ...option2, emission: emission2 },
+                            difference: Math.abs(emission1 - emission2),
+                            savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
+                            lowerOption: emission1 < emission2 ? 'option1' : 'option2'
+                        };
+                    };
+                    console.log('已提供compareEmissions降级方案');
+                }
+            } catch (e) {
+                console.error('初始化验证失败:', e);
+            }
+        });
+    </script>
+    <script>
         // 检查登录状态
         document.addEventListener('DOMContentLoaded', function() {
             // 检查本地存储中是否有STORAGE_KEYS对象

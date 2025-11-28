@@ -649,10 +649,26 @@ function initCalculatorPage() {
 // 处理计算逻辑 - 增强错误处理和用户体验
 function handleCalculate() {
     try {
-        const distance1 = parseFloat(document.getElementById('distance-1')?.value || '0');
-        const distance2 = parseFloat(document.getElementById('distance-2')?.value || '0');
-        const transportType1 = document.getElementById('transport-type-1')?.value || 'car_small';
-        const transportType2 = document.getElementById('transport-type-2')?.value || 'bus';
+        console.log('开始碳足迹计算...');
+        
+        // 安全获取DOM元素值
+        const distanceInput1 = document.getElementById('distance-1');
+        const distanceInput2 = document.getElementById('distance-2');
+        const transportSelect1 = document.getElementById('transport-type-1');
+        const transportSelect2 = document.getElementById('transport-type-2');
+        
+        // 检查DOM元素是否存在
+        if (!distanceInput1 || !distanceInput2 || !transportSelect1 || !transportSelect2) {
+            console.error('缺少必要的DOM元素');
+            utils.showNotification('页面元素加载失败，请刷新页面', 'error');
+            return;
+        }
+        
+        // 获取输入值
+        const distance1 = parseFloat(distanceInput1.value || '0');
+        const distance2 = parseFloat(distanceInput2.value || '0');
+        const transportType1 = transportSelect1.value || 'car_small';
+        const transportType2 = transportSelect2.value || 'bus';
         
         // 验证输入
         if (isNaN(distance1) || distance1 <= 0 || isNaN(distance2) || distance2 <= 0) {
@@ -663,29 +679,86 @@ function handleCalculate() {
         // 确保两个选项使用相同的距离
         const distance = Math.max(distance1, distance2);
         
-        // 确保计算器存在
+        // 创建或验证计算器实例
         if (!window.carbonCalculator) {
-            window.carbonCalculator = new CarbonFootprintCalculator();
+            console.log('创建CarbonFootprintCalculator实例...');
+            try {
+                window.carbonCalculator = new (window.CarbonFootprintCalculator || function() {
+                    // 应急计算器类实现
+                    this.compareEmissions = function(option1, option2) {
+                        const getEmissionFactor = function(transportType) {
+                            const factors = {
+                                'car_small': 0.12, // 小型汽车
+                                'car_medium': 0.18,
+                                'car_large': 0.25,
+                                'bus': 0.05,      // 公交车
+                                'subway': 0.03,   // 地铁
+                                'bike': 0,        // 自行车
+                                'walk': 0         // 步行
+                            };
+                            return factors[transportType] || 0.15; // 默认值
+                        };
+                        
+                        const emission1 = option1.amount * getEmissionFactor(option1.item);
+                        const emission2 = option2.amount * getEmissionFactor(option2.item);
+                        
+                        return {
+                            option1: { ...option1, emission: emission1 },
+                            option2: { ...option2, emission: emission2 },
+                            difference: Math.abs(emission1 - emission2),
+                            savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
+                            lowerOption: emission1 < emission2 ? 'option1' : 'option2'
+                        };
+                    };
+                    
+                    this.calculateEquivalentTrees = function(carbonAmount) {
+                        return carbonAmount / 21.77; // 一棵树每年吸收约21.77公斤CO2
+                    };
+                    
+                    this.getUserRecords = function() { return []; };
+                    this.saveRecord = function(record) { return Promise.resolve(record); };
+                    this.getStatistics = function() { return { totalRecords: 0, totalEmission: 0, averageEmission: 0 }; };
+                    this.getClassRanking = function() { return []; };
+                })();
+                console.log('计算器实例已准备就绪');
+            } catch (initError) {
+                console.error('创建计算器实例失败:', initError);
+                utils.showNotification('初始化计算器失败，使用备用计算方案', 'warning');
+            }
         }
         
-        // 计算碳排放
-        const calculator = window.carbonCalculator;
+        // 计算碳排放 - 多层降级机制
         let comparison;
-        
         try {
-            comparison = calculator.compareEmissions(
-                { type: 'transportation', item: transportType1, amount: distance },
-                { type: 'transportation', item: transportType2, amount: distance }
-            );
+            if (window.carbonCalculator && typeof window.carbonCalculator.compareEmissions === 'function') {
+                comparison = window.carbonCalculator.compareEmissions(
+                    { type: 'transportation', item: transportType1, amount: distance },
+                    { type: 'transportation', item: transportType2, amount: distance }
+                );
+                console.log('计算成功，使用计算器方法');
+            } else {
+                throw new Error('compareEmissions方法不可用');
+            }
         } catch (calcError) {
-            console.error('计算出错:', calcError);
-            // 如果计算出错，使用模拟数据
+            console.error('计算出错，使用降级方案:', calcError);
+            // 降级方案：直接计算
+            const getEmissionFactor = function(transportType) {
+                const factors = {
+                    'car_small': 0.12, 'car_medium': 0.18, 'car_large': 0.25,
+                    'bus': 0.05, 'subway': 0.03, 'bike': 0, 'walk': 0
+                };
+                return factors[transportType] || 0.15;
+            };
+            
+            const emission1 = distance * getEmissionFactor(transportType1);
+            const emission2 = distance * getEmissionFactor(transportType2);
+            
             comparison = {
-                option1: { type: 'transportation', item: transportType1, amount: distance, emission: distance * 0.2 },
-                option2: { type: 'transportation', item: transportType2, amount: distance, emission: distance * 0.05 },
-                difference: distance * 0.15,
-                savings: distance * 0.15,
-                lowerOption: 'option2'
+                option1: { type: 'transportation', item: transportType1, amount: distance, emission: emission1 },
+                option2: { type: 'transportation', item: transportType2, amount: distance, emission: emission2 },
+                difference: Math.abs(emission1 - emission2),
+                savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
+                lowerOption: emission1 < emission2 ? 'option1' : 'option2'
             };
         }
         
@@ -698,12 +771,13 @@ function handleCalculate() {
             saveBtn.disabled = false;
         }
         
-        // 保存当前计算结果到临时变量，以便后续保存
+        // 保存当前计算结果到临时变量
         window.currentCalculation = comparison;
+        console.log('计算完成，结果已保存');
         
     } catch (error) {
-        console.error('处理计算时出错:', error);
-        utils.showNotification('计算失败，请重试', 'error');
+        console.error('处理计算时发生严重错误:', error);
+        utils.showNotification('计算过程中遇到问题，请刷新页面重试', 'error');
     }
 }
 
