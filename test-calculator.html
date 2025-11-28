@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计算器测试页面</title>
+    <script src="js/utils.js"></script>
+    <script src="js/constants.js"></script>
+    <script src="js/footprint-calculator.js"></script>
+    <script src="js/main.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <h1>计算器功能测试</h1>
+    
+    <div class="test-section">
+        <h2>1. 检查计算器实例是否存在</h2>
+        <button id="check-instance">检查实例</button>
+        <div id="instance-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 测试compareEmissions方法</h2>
+        <button id="test-calculate">运行计算测试</button>
+        <div id="calculate-result" class="result"></div>
+    </div>
+    
+    <script>
+        // 页面加载完成后执行测试
+        window.addEventListener('load', function() {
+            console.log('测试页面加载完成');
+            
+            // 检查计算器实例
+            document.getElementById('check-instance').onclick = function() {
+                const resultDiv = document.getElementById('instance-result');
+                resultDiv.innerHTML = '';
+                
+                try {
+                    resultDiv.innerHTML += '<p>window.carbonCalculator 存在: ' + (window.carbonCalculator ? '是' : '否') + '</p>';
+                    
+                    if (window.carbonCalculator) {
+                        resultDiv.innerHTML += '<p>compareEmissions 方法存在: ' + 
+                            (typeof window.carbonCalculator.compareEmissions === 'function' ? '是' : '否') + '</p>';
+                        
+                        resultDiv.innerHTML += '<p>getCarbonReductionTips 方法存在: ' + 
+                            (typeof window.carbonCalculator.getCarbonReductionTips === 'function' ? '是' : '否') + '</p>';
+                            
+                        resultDiv.innerHTML += '<p>calculateEquivalentTrees 方法存在: ' + 
+                            (typeof window.carbonCalculator.calculateEquivalentTrees === 'function' ? '是' : '否') + '</p>';
+                    }
+                } catch (e) {
+                    resultDiv.innerHTML += '<p>检查过程出错: ' + e.message + '</p>';
+                }
+            };
+            
+            // 测试计算功能
+            document.getElementById('test-calculate').onclick = function() {
+                const resultDiv = document.getElementById('calculate-result');
+                resultDiv.innerHTML = '<p>开始计算测试...</p>';
+                
+                try {
+                    if (!window.carbonCalculator || typeof window.carbonCalculator.compareEmissions !== 'function') {
+                        resultDiv.innerHTML += '<p>错误: 计算器实例或compareEmissions方法不可用</p>';
+                        return;
+                    }
+                    
+                    // 测试交通模式计算
+                    const transportResult = window.carbonCalculator.compareEmissions(
+                        { type: 'transportation', item: 'car_medium', amount: 10 },
+                        { type: 'transportation', item: 'bus', amount: 10 }
+                    );
+                    
+                    resultDiv.innerHTML += '<h4>交通模式计算结果:</h4>';
+                    resultDiv.innerHTML += '<p>汽车排放: ' + transportResult.option1.emission.toFixed(2) + ' kg CO₂e</p>';
+                    resultDiv.innerHTML += '<p>公交排放: ' + transportResult.option2.emission.toFixed(2) + ' kg CO₂e</p>';
+                    resultDiv.innerHTML += '<p>差异: ' + transportResult.difference.toFixed(2) + ' kg CO₂e</p>';
+                    
+                    // 测试饮食模式计算
+                    const dietResult = window.carbonCalculator.compareEmissions(
+                        { type: 'diet', item: 'beef', amount: 1 },
+                        { type: 'diet', item: 'vegetables', amount: 1 }
+                    );
+                    
+                    resultDiv.innerHTML += '<h4>饮食模式计算结果:</h4>';
+                    resultDiv.innerHTML += '<p>牛肉排放: ' + dietResult.option1.emission.toFixed(2) + ' kg CO₂e</p>';
+                    resultDiv.innerHTML += '<p>蔬菜排放: ' + dietResult.option2.emission.toFixed(2) + ' kg CO₂e</p>';
+                    resultDiv.innerHTML += '<p>差异: ' + dietResult.difference.toFixed(2) + ' kg CO₂e</p>';
+                    
+                    resultDiv.innerHTML += '<p>测试成功完成！</p>';
+                } catch (e) {
+                    resultDiv.innerHTML += '<p>计算过程出错: ' + e.message + '</p>';
+                    console.error('计算测试失败:', e);
+                }
+            };
+        });
+    </script>
+</body>
+</html>

@@ -10,109 +10,9 @@
     <script src="js/footprint-calculator.js"></script>
     <script src="js/main.js" defer></script>
     <script>
-        // 确保CarbonFootprintCalculator正确初始化
+        // 确保在页面加载时不执行任何登录检查
         window.addEventListener('load', function() {
-            try {
-                // 验证关键对象是否存在
-                if (!window.CarbonFootprintCalculator) {
-                    console.error('CarbonFootprintCalculator类未定义');
-                    alert('错误：碳足迹计算器核心功能未加载，请刷新页面重试');
-                }
-                
-                // 确保window.carbonCalculator实例存在
-                if (!window.carbonCalculator) {
-                    console.log('创建CarbonFootprintCalculator实例...');
-                    try {
-                        window.carbonCalculator = new CarbonFootprintCalculator();
-                        console.log('计算器实例创建成功');
-                    } catch (initError) {
-                        console.error('创建计算器实例失败:', initError);
-                        alert('错误：初始化计算器失败，请刷新页面重试');
-                    }
-                }
-                
-                // 验证关键函数是否存在
-                if (window.carbonCalculator && typeof window.carbonCalculator.compareEmissions !== 'function') {
-                    console.error('compareEmissions方法未定义');
-                    // 提供降级方案
-                    window.carbonCalculator.compareEmissions = function(option1, option2) {
-                        // 模拟计算结果
-                        const emission1 = option1.amount * 0.2;
-                        const emission2 = option2.amount * 0.05;
-                        return {
-                            option1: { ...option1, emission: emission1 },
-                            option2: { ...option2, emission: emission2 },
-                            difference: Math.abs(emission1 - emission2),
-                            savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
-                            lowerOption: emission1 < emission2 ? 'option1' : 'option2'
-                        };
-                    };
-                    console.log('已提供compareEmissions降级方案');
-                }
-            } catch (e) {
-                console.error('初始化验证失败:', e);
-            }
-        });
-    </script>
-    <script>
-        // 检查登录状态
-        document.addEventListener('DOMContentLoaded', function() {
-            // 检查本地存储中是否有STORAGE_KEYS对象
-            if (!window.STORAGE_KEYS) {
-                window.STORAGE_KEYS = {
-                    USER_INFO: 'userInfo',
-                    USER_RECORDS: 'userRecords',
-                    CLASS_RANKING: 'classRanking'
-                };
-            }
-            
-            // 检查用户是否已登录
-            let userInfo = null;
-            try {
-                if (window.utils && window.utils.storage && typeof window.utils.storage.get === 'function') {
-                    userInfo = window.utils.storage.get(STORAGE_KEYS.USER_INFO);
-                } else {
-                    const storedInfo = localStorage.getItem(STORAGE_KEYS.USER_INFO);
-                    if (storedInfo) {
-                        userInfo = JSON.parse(storedInfo);
-                    }
-                }
-            } catch (error) {
-                console.error('获取用户信息失败:', error);
-            }
-            
-            // 可选登录，不强制跳转
-            // 保留用户信息检查，用于后续功能判断
-            if (!userInfo) {
-                console.log('用户未登录，以访客模式使用计算器');
-            }
-            
-            // 更新导航栏
-            const registerLink = document.getElementById('register-link');
-            const logoutButton = document.getElementById('logout-button');
-            
-            if (userInfo) {
-                // 已登录状态
-                if (registerLink) registerLink.style.display = 'none';
-                if (logoutButton) logoutButton.style.display = 'block';
-                
-                // 添加退出登录事件
-                if (logoutButton) {
-                    logoutButton.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        try {
-                            if (window.utils && window.utils.storage && typeof window.utils.storage.remove === 'function') {
-                                window.utils.storage.remove(STORAGE_KEYS.USER_INFO);
-                            } else {
-                                localStorage.removeItem(STORAGE_KEYS.USER_INFO);
-                            }
-                            window.location.href = 'login.html';
-                        } catch (error) {
-                            console.error('退出登录失败:', error);
-                        }
-                    });
-                }
-            }
+            console.log('页面加载完成，开始初始化计算器');
         });
     </script>
 </head>
@@ -131,9 +31,6 @@
                 <li><a href="calculator.html" class="active">碳足迹计算</a></li>
                 <li><a href="records.html">个人记录</a></li>
                 <li><a href="ranking.html">班级排名</a></li>
-                <li><a href="login.html" id="register-link">登录</a></li>
-                <li><a href="#" id="logout-button" style="display:none;">退出登录</a></li>
-                <li><a href="admin.html" class="admin-link">管理员登录</a></li>
             </ul>
         </div>
     </nav>
@@ -183,20 +80,20 @@
             </div>
         </div>
         
-        <!-- 食品碳足迹计算 -->
-        <div id="food-section" class="calculator-section" style="display: none;">
+        <!-- 食品消费计算 -->
+        <div id="food-section" class="calculator-section">
             <div class="calculator-container">
                 <!-- 选项1 -->
                 <div class="calculator-card">
                     <h3>选项 1</h3>
                     <div class="form-group">
-                        <label for="food-type-1">食品类别</label>
+                        <label for="food-type-1">食品类型</label>
                         <select id="food-type-1" required>
                             <!-- JavaScript 动态填充 -->
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="food-amount-1">消费量 (千克)</label>
+                        <label for="food-amount-1">消费量 (公斤)</label>
                         <input type="number" id="food-amount-1" min="0" step="0.1" value="1" required>
                     </div>
                 </div>
@@ -205,103 +102,94 @@
                 <div class="calculator-card">
                     <h3>选项 2</h3>
                     <div class="form-group">
-                        <label for="food-type-2">食品类别</label>
+                        <label for="food-type-2">食品类型</label>
                         <select id="food-type-2" required>
                             <!-- JavaScript 动态填充 -->
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="food-amount-2">消费量 (千克)</label>
+                        <label for="food-amount-2">消费量 (公斤)</label>
                         <input type="number" id="food-amount-2" min="0" step="0.1" value="1" required>
                     </div>
                 </div>
             </div>
-            
-            <!-- 牛肉碳足迹构成分析 -->
-            <div id="beef-breakdown" class="calculator-card" style="margin-top: 30px; display: none;">
-                <h3>牛肉碳足迹构成分析</h3>
-                <div class="breakdown-chart">
-                    <!-- JavaScript 动态填充 -->
-                </div>
-                <p>注：不同食品的碳足迹构成差异很大，牛肉的高碳足迹主要来源于肠道发酵产生的甲烷气体。</p>
-            </div>
         </div>
         
-        <div style="text-align: center; margin: 30px 0;">
-            <button id="calculate-btn" class="btn-primary">计算碳足迹</button>
+        <!-- 计算按钮 -->
+        <div class="calculator-actions">
+            <button id="calculate-btn" class="primary-button">开始计算</button>
         </div>
         
         <!-- 结果展示区域 -->
-        <div id="results-section" class="results-section" style="display: none;">
+        <div id="results-section" class="results-section">
             <h3>计算结果</h3>
             
-            <div class="result-comparison">
-                <div class="result-item option1">
+            <!-- 选项对比 -->
+            <div class="comparison-results">
+                <div class="result-item">
                     <h4 id="option1-name">选项 1</h4>
-                    <div class="carbon-value" id="option1-emission">0 kg</div>
-                    <div>碳排放量</div>
+                    <div class="emission-value" id="option1-emission">0 kg CO₂e</div>
                 </div>
-                
-                <div class="result-item option2">
+                <div class="result-item">
                     <h4 id="option2-name">选项 2</h4>
-                    <div class="carbon-value" id="option2-emission">0 kg</div>
-                    <div>碳排放量</div>
+                    <div class="emission-value" id="option2-emission">0 kg CO₂e</div>
                 </div>
             </div>
             
-            <div style="text-align: center; margin: 30px 0;">
-                <h4>选择低碳选项可节约</h4>
-                <div class="carbon-saved" id="carbon-saved">0 kg</div>
-                <div>这相当于种植 <span id="trees-saved">0</span> 棵树一年吸收的碳量</div>
+            <!-- 减排效果 -->
+            <div class="savings-result">
+                <div class="savings-item">
+                    <span class="label">碳减排量:</span>
+                    <span class="value" id="carbon-saved">0 kg CO₂e</span>
+                </div>
+                <div class="savings-item">
+                    <span class="label">相当于种植树木:</span>
+                    <span class="value" id="trees-saved">0</span>
+                </div>
             </div>
             
             <!-- 环保建议 -->
-            <div style="margin-top: 30px;">
+            <div class="reduction-tips">
                 <h4>环保建议</h4>
                 <ul id="reduction-tips">
                     <!-- JavaScript 动态填充 -->
                 </ul>
             </div>
             
-            <!-- 保存记录 -->
-            <div style="margin-top: 30px;">
-                <h4>保存记录</h4>
+            <!-- 记录保存 -->
+            <div class="save-record">
                 <div class="form-group">
                     <label for="record-notes">备注 (可选)</label>
-                    <input type="text" id="record-notes" placeholder="输入备注信息...">
+                    <textarea id="record-notes" rows="3" placeholder="添加记录备注..."></textarea>
                 </div>
-                <button id="save-btn" class="btn-secondary" disabled>保存记录</button>
+                <button id="save-btn" class="secondary-button" disabled>保存记录</button>
             </div>
         </div>
         
-        <!-- 碳排放知识 -->
-        <div class="calculator-card" style="margin-top: 30px;">
-            <h3>碳排放知识</h3>
-            <div id="transport-knowledge">
-                <p>碳足迹是指个人、组织或产品在其全生命周期中直接或间接产生的温室气体排放总量，通常以二氧化碳当量（CO₂e）表示。</p>
-                <p>不同交通方式的碳排放强度差异很大：步行和自行车的碳足迹为零，公共交通（如公交车、地铁）的碳足迹较低，而私家车和飞机的碳足迹较高。</p>
-                <p>通过选择更环保的出行方式，我们可以显著减少个人碳足迹，为减缓气候变化贡献力量。</p>
-            </div>
-            <div id="food-knowledge" style="display: none;">
-                <p>食品生产是全球碳排放的重要来源之一，约占全球温室气体排放的四分之一。</p>
-                <p>食品碳足迹差异很大：植物性食品（如蔬菜、谷物）的碳足迹通常较低，而动物性食品（特别是红肉）的碳足迹较高。</p>
-                <p>减少肉类消费，增加植物性食品摄入，是降低饮食碳足迹的有效途径。</p>
-            </div>
+        <!-- 环保知识 -->
+        <div class="environmental-info">
+            <h3>碳足迹知识</h3>
+            <p>碳足迹是指一个人、组织或产品直接和间接产生的温室气体排放总量。通过选择低碳生活方式，我们每个人都可以为减缓气候变化做出贡献。</p>
+            <p>建议选择步行、骑自行车或使用公共交通等低碳出行方式；减少红肉消费，增加植物性食品的比例；节约用电和用水，减少能源消耗。</p>
         </div>
         
-        <!-- 数据来源说明 -->
-        <div class="calculator-card" style="margin-top: 30px;">
+        <!-- 数据来源 -->
+        <div class="data-sources">
             <h3>数据来源</h3>
-            <p>本计算器使用的食品碳足迹数据参考了联合国粮农组织（FAO）、世界资源研究所（WRI）等权威机构的研究成果。</p>
-            <p>注：实际碳足迹可能因生产方式、地域、运输距离等因素而有所差异。本工具提供的是估算值，旨在帮助用户了解不同选择的相对环境影响。</p>
+            <p>本计算器使用的碳排放数据主要来源于：</p>
+            <ul>
+                <li>IPCC (Intergovernmental Panel on Climate Change) 报告</li>
+                <li>世界资源研究所 (WRI) 数据</li>
+                <li>联合国粮食及农业组织 (FAO) 统计数据</li>
+            </ul>
+            <p>数据仅供参考，实际碳足迹可能因地区、生产方式等因素而有所不同。</p>
         </div>
     </main>
 
     <footer>
         <div class="container">
-            <p>© 2023 25-10矿大能动 - 碳足迹计算器</p>
-            <p>本网站旨在提高低碳环保意识，为碳减排贡献力量</p>
+            <p>&copy; 2025 碳足迹计算器 - 25-10矿大能动</p>
         </div>
     </footer>
 </body>
-</html>","}}}
+</html>

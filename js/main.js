@@ -299,7 +299,7 @@ class Calculator {
         html += '</div>';
         breakdownChart.innerHTML = html;
     }
-};
+}
 
 // 扩展Calculator类的原型方法
 Calculator.prototype.handleCalculate = function() {
@@ -573,162 +573,69 @@ Calculator.prototype.fallbackSaveRecord = function(record) {
     }
 };
 
-// 初始化页面函数 - 处理URL省略.html的情况
+// 初始化页面
 function initializePage() {
     try {
-        // 获取当前页面路径，去除查询参数和哈希
-        const pathname = window.location.pathname;
-        
-        // 提取页面名称，处理省略.html的情况
-        let pageName = pathname.split('/').pop();
-        
-        // 如果没有.html后缀，添加它（但只在需要时）
-        if (!pageName.includes('.')) {
-            // 这是为了页面识别，不需要实际重定向
-            console.log(`识别到页面: ${pageName}, 假定是 ${pageName}.html`);
-        } else {
-            // 提取不带扩展名的页面名称
-            pageName = pageName.split('.')[0];
-        }
-        
-        console.log(`正在初始化页面: ${pageName}`);
-        
-        // 确保常量已定义
+        // 确保基本常量已定义
         ensureConstantsDefined();
         
-        // 根据页面类型执行相应的初始化
-        switch (pageName) {
-            case 'calculator':
-                // 计算器页面特殊处理 - 确保不强制登录
-                console.log('计算器页面初始化 - 不强制登录');
-                try {
-                    // 尝试正常初始化计算器
-                    if (window.Calculator) {
-                        const app = new window.Calculator();
-                        app.init();
-                    } else {
-                        // 创建临时的Calculator实例
-                        const app = new Calculator();
-                        app.init();
-                    }
-                } catch (calcError) {
-                    console.error('计算器初始化失败，使用降级方案:', calcError);
-                    initFallbackCalculator();
-                }
-                break;
-            // 可以添加其他页面的初始化逻辑
-            default:
-                console.log(`没有针对 ${pageName} 的特定初始化逻辑`);
-                // 对于其他页面，也尝试初始化计算器（如果需要）
-                if (typeof Calculator === 'function') {
-                    try {
-                        const app = new Calculator();
-                        app.init();
-                    } catch (e) {
-                        console.log(`在 ${pageName} 页面初始化计算器失败（可能不需要）:`, e);
-                    }
-                }
-        }
+        console.log('页面初始化开始，当前路径:', window.location.pathname);
         
-        console.log('页面初始化完成');
+        // 检查当前是否为计算器页面
+        if (window.location.pathname.includes('calculator.html') || window.location.pathname.endsWith('/calculator')) {
+            console.log('计算器页面初始化...');
+            
+            // 绝对不执行任何登录检查
+            console.log('计算器页面以访客模式运行，无需登录');
+            
+            // 初始化计算器（多种降级方案）
+            initCalculatorWithFallback();
+        } else {
+            // 对于其他页面，可以保留原有的初始化逻辑
+            console.log('非计算器页面，执行标准初始化');
+        }
     } catch (error) {
         console.error('页面初始化失败:', error);
-        
-        // 尝试降级方案
-        try {
-            // 获取页面名称用于判断
-            const pathname = window.location.pathname;
-            let pageName = pathname.split('/').pop();
-            if (!pageName.includes('.')) {
-                pageName = pageName;
-            } else {
-                pageName = pageName.split('.')[0];
-            }
-            
-            if (pageName === 'calculator') {
-                console.log('尝试使用降级方案初始化计算器');
-                initFallbackCalculator();
-            }
-        } catch (fallbackError) {
-            console.error('降级方案执行失败:', fallbackError);
-        }
-    }
-}
-
-// 初始化降级计算器
-function initFallbackCalculator() {
-    const fallbackCalc = createFallbackCalculator();
-    
-    // 为计算按钮添加事件监听
-    const calculateBtn = document.getElementById('calculate-btn');
-    if (calculateBtn) {
-        calculateBtn.addEventListener('click', function() {
-            try {
-                // 获取当前标签页
-                const currentTab = document.getElementById('transport-tab')?.classList.contains('active') ? 'transport' : 'food';
-                const isTransport = currentTab === 'transport';
-                
-                // 获取用户输入
-                const option1Type = isTransport ? 'transportation' : 'diet';
-                const option2Type = option1Type;
-                
-                const option1Item = document.getElementById(isTransport ? 'transport-type-1' : 'food-type-1')?.value;
-                const option2Item = document.getElementById(isTransport ? 'transport-type-2' : 'food-type-2')?.value;
-                const option1Amount = parseFloat(document.getElementById(isTransport ? 'distance-1' : 'food-amount-1')?.value) || 0;
-                const option2Amount = parseFloat(document.getElementById(isTransport ? 'distance-2' : 'food-amount-2')?.value) || 0;
-                
-                // 创建选项对象
-                const option1 = { type: option1Type, item: option1Item, amount: option1Amount };
-                const option2 = { type: option2Type, item: option2Item, amount: option2Amount };
-                
-                // 计算结果
-                const result = fallbackCalc.compareEmissions(option1, option2);
-                
-                // 显示结果
-                const resultsSection = document.getElementById('results-section');
-                if (resultsSection) {
-                    resultsSection.style.display = 'block';
-                    
-                    // 更新结果显示
-                    if (document.getElementById('option1-name')) {
-                        document.getElementById('option1-name').textContent = option1Item;
-                    }
-                    if (document.getElementById('option2-name')) {
-                        document.getElementById('option2-name').textContent = option2Item;
-                    }
-                    
-                    // 格式化碳排放量显示
-                    const formatEmission = (amount) => {
-                        return window.utils?.formatCarbonEmission(amount) || (amount.toFixed(2) + ' kg');
-                    };
-                    
-                    if (document.getElementById('option1-emission')) {
-                        document.getElementById('option1-emission').textContent = formatEmission(result.option1.emission);
-                    }
-                    if (document.getElementById('option2-emission')) {
-                        document.getElementById('option2-emission').textContent = formatEmission(result.option2.emission);
-                    }
-                    if (document.getElementById('carbon-saved')) {
-                        document.getElementById('carbon-saved').textContent = formatEmission(result.savings);
-                    }
-                    
-                    // 计算相当于种植多少棵树
-                    const treesSaved = fallbackCalc.calculateEquivalentTrees(result.savings);
-                    if (document.getElementById('trees-saved')) {
-                        document.getElementById('trees-saved').textContent = treesSaved.toFixed(2);
-                    }
-                }
-            } catch (e) {
-                console.error('计算失败:', e);
-                alert('计算过程中发生错误，请重试。');
-            }
-        });
     }
 }
 
 // 确保常量已定义
 function ensureConstantsDefined() {
-    // 确保EMISSION_FACTORS已定义
+    // 定义交通选项
+    if (!window.TRANSPORT_OPTIONS || window.TRANSPORT_OPTIONS.length === 0) {
+        window.TRANSPORT_OPTIONS = [
+            { value: 'walking', label: '步行' },
+            { value: 'cycling', label: '骑自行车' },
+            { value: 'bus', label: '公交车' },
+            { value: 'subway', label: '地铁' },
+            { value: 'taxi', label: '出租车' },
+            { value: 'car_small', label: '小型汽车' },
+            { value: 'car_medium', label: '中型汽车' },
+            { value: 'car_large', label: '大型汽车' },
+            { value: 'motorcycle', label: '摩托车' },
+            { value: 'train', label: '火车' },
+            { value: 'plane_domestic', label: '国内航班' },
+            { value: 'plane_international', label: '国际航班' }
+        ];
+    }
+
+    // 定义饮食选项
+    if (!window.DIET_OPTIONS || window.DIET_OPTIONS.length === 0) {
+        window.DIET_OPTIONS = [
+            { value: 'beef', label: '牛肉' },
+            { value: 'pork', label: '猪肉' },
+            { value: 'chicken', label: '鸡肉' },
+            { value: 'eggs', label: '鸡蛋' },
+            { value: 'milk', label: '牛奶' },
+            { value: 'rice', label: '大米' },
+            { value: 'wheat', label: '小麦' },
+            { value: 'vegetables', label: '蔬菜' },
+            { value: 'fruits', label: '水果' },
+            { value: 'grains', label: '谷物' }
+        ];
+    }
+
+    // 定义排放因子
     if (!window.EMISSION_FACTORS) {
         window.EMISSION_FACTORS = {
             transportation: {
@@ -759,231 +666,10 @@ function ensureConstantsDefined() {
             }
         };
     }
-    
-    // 确保TRANSPORT_OPTIONS已定义
-    if (!window.TRANSPORT_OPTIONS) {
-        window.TRANSPORT_OPTIONS = [
-            { value: 'walking', label: '步行', unit: 'km' },
-            { value: 'cycling', label: '自行车', unit: 'km' },
-            { value: 'bus', label: '公共汽车', unit: 'km' },
-            { value: 'subway', label: '地铁', unit: 'km' },
-            { value: 'taxi', label: '出租车', unit: 'km' },
-            { value: 'car_small', label: '小型汽车', unit: 'km' },
-            { value: 'car_medium', label: '中型汽车', unit: 'km' },
-            { value: 'car_large', label: '大型汽车', unit: 'km' },
-            { value: 'motorcycle', label: '摩托车', unit: 'km' },
-            { value: 'train', label: '火车', unit: 'km' },
-            { value: 'plane_domestic', label: '国内航班', unit: 'km' },
-            { value: 'plane_international', label: '国际航班', unit: 'km' }
-        ];
-    }
-    
-    // 确保DIET_OPTIONS已定义
-    if (!window.DIET_OPTIONS) {
-        window.DIET_OPTIONS = [
-            { value: 'beef', label: '牛肉', unit: 'kg', category: 'meat', highImpact: true },
-            { value: 'pork', label: '猪肉', unit: 'kg', category: 'meat' },
-            { value: 'chicken', label: '鸡肉', unit: 'kg', category: 'meat' },
-            { value: 'vegetables', label: '蔬菜', unit: 'kg', category: 'vegetable' },
-            { value: 'fruits', label: '水果', unit: 'kg', category: 'fruit' },
-            { value: 'grains', label: '谷物', unit: 'kg', category: 'grain' }
-        ];
-    }
-    
-    // 确保STORAGE_KEYS已定义
-    if (!window.STORAGE_KEYS) {
-        window.STORAGE_KEYS = {
-            USER_RECORDS: 'carbon_footprint_records',
-            USER_INFO: 'user_info',
-            CLASS_RANKING: 'class_carbon_ranking',
-            ADMIN_LOGGED_IN: 'admin_logged_in',
-            USER_LOGGED_IN: 'user_logged_in'
-        };
-    }
-}
 
-// 页面加载完成后初始化
-window.addEventListener('DOMContentLoaded', initializePage);
-
-// 确保EMISSION_FACTORS存在
-if (!window.EMISSION_FACTORS) {
-    window.EMISSION_FACTORS = {
-        transportation: {},
-        energy: {},
-        diet: {}
-    };
-}
-
-// 确保TRANSPORT_OPTIONS存在
-if (!window.TRANSPORT_OPTIONS) {
-    window.TRANSPORT_OPTIONS = [];
-}
-
-// 确保DIET_OPTIONS存在
-if (!window.DIET_OPTIONS) {
-    window.DIET_OPTIONS = [];
-}
-
-// 确保工具函数存在
-if (!window.utils) {
-    window.utils = {
-        storage: {
-            get: function(key) {
-                try {
-                    const item = localStorage.getItem(key);
-                    return item ? JSON.parse(item) : null;
-                } catch (error) {
-                    console.error('Error reading from localStorage:', error);
-                    return null;
-                }
-            },
-            set: function(key, value) {
-                try {
-                    localStorage.setItem(key, JSON.stringify(value));
-                    return true;
-                } catch (error) {
-                    console.error('Error writing to localStorage:', error);
-                    return false;
-                }
-            }
-        },
-        formatCarbonEmission: function(amount) {
-            if (amount === 0) return '0 kg';
-            if (amount < 1) {
-                return (amount * 1000).toFixed(2) + ' g';
-            } else if (amount < 1000) {
-                return amount.toFixed(2) + ' kg';
-            } else {
-                return (amount / 1000).toFixed(2) + ' t';
-            }
-        },
-        generateId: function() {
-            return Date.now().toString(36) + Math.random().toString(36).substr(2);
-        }
-    };
-}
-
-// 计算器类
-class Calculator {
-    constructor() {
-        this.transportOptions = window.TRANSPORT_OPTIONS || [];
-        this.dietOptions = window.DIET_OPTIONS || [];
-        this.currentTab = 'transport'; // 默认为交通方式标签
-    }
-
-    // 初始化页面
-    init() {
-        this.setupTabs();
-        this.populateDropdowns();
-        this.setupEventListeners();
-    }
-
-    // 设置标签切换
-    setupTabs() {
-        const transportTab = document.getElementById('transport-tab');
-        const foodTab = document.getElementById('food-tab');
-        const transportSection = document.getElementById('transport-section');
-        const foodSection = document.getElementById('food-section');
-        const transportKnowledge = document.getElementById('transport-knowledge');
-        const foodKnowledge = document.getElementById('food-knowledge');
-
-        if (transportTab && foodTab) {
-            transportTab.addEventListener('click', () => {
-                this.switchTab('transport');
-                if (transportSection) transportSection.style.display = 'block';
-                if (foodSection) foodSection.style.display = 'none';
-                if (transportKnowledge) transportKnowledge.style.display = 'block';
-                if (foodKnowledge) foodKnowledge.style.display = 'none';
-                transportTab.classList.add('active');
-                foodTab.classList.remove('active');
-            });
-
-            foodTab.addEventListener('click', () => {
-                this.switchTab('food');
-                if (transportSection) transportSection.style.display = 'none';
-                if (foodSection) foodSection.style.display = 'block';
-                if (transportKnowledge) transportKnowledge.style.display = 'none';
-                if (foodKnowledge) foodKnowledge.style.display = 'block';
-                foodTab.classList.add('active');
-                transportTab.classList.remove('active');
-            });
-        }
-    }
-
-    // 切换标签
-    switchTab(tab) {
-        this.currentTab = tab;
-        // 重置结果显示区域
-        const resultsSection = document.getElementById('results-section');
-        if (resultsSection) {
-            resultsSection.style.display = 'none';
-        }
-    }
-
-    // 填充下拉选择框
-    populateDropdowns() {
-        // 填充交通方式下拉框
-        this.populateDropdown('transport-type-1', this.transportOptions);
-        this.populateDropdown('transport-type-2', this.transportOptions);
-        
-        // 填充食品类别下拉框
-        this.populateDropdown('food-type-1', this.dietOptions);
-        this.populateDropdown('food-type-2', this.dietOptions);
-    }
-
-    // 填充单个下拉框
-    populateDropdown(elementId, options) {
-        const element = document.getElementById(elementId);
-        if (!element) return;
-
-        element.innerHTML = '';
-        options.forEach(option => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option.value;
-            optionElement.textContent = option.label;
-            element.appendChild(optionElement);
-        });
-    }
-
-    // 设置事件监听器
-    setupEventListeners() {
-        // 计算按钮事件
-        const calculateBtn = document.getElementById('calculate-btn');
-        if (calculateBtn) {
-            calculateBtn.addEventListener('click', this.handleCalculate.bind(this));
-        }
-
-        // 保存记录按钮事件
-        const saveBtn = document.getElementById('save-btn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', this.handleSaveRecord.bind(this));
-        }
-
-        // 监听食品类型变化，显示牛肉碳足迹构成分析
-        const foodType1 = document.getElementById('food-type-1');
-        const foodType2 = document.getElementById('food-type-2');
-        const beefBreakdown = document.getElementById('beef-breakdown');
-
-        if (foodType1 && foodType2 && beefBreakdown) {
-            const showBeefBreakdown = () => {
-                const show = (foodType1.value === 'beef' || foodType2.value === 'beef');
-                beefBreakdown.style.display = show ? 'block' : 'none';
-                if (show) {
-                    this.showBeefBreakdown();
-                }
-            };
-
-            foodType1.addEventListener('change', showBeefBreakdown);
-            foodType2.addEventListener('change', showBeefBreakdown);
-        }
-    }
-
-    // 显示牛肉碳足迹构成分析
-    showBeefBreakdown() {
-        const breakdownChart = document.querySelector('.breakdown-chart');
-        if (!breakdownChart) return;
-
-        const breakdown = window.BEEF_EMISSION_BREAKDOWN || {
+    // 定义牛肉排放构成
+    if (!window.BEEF_EMISSION_BREAKDOWN) {
+        window.BEEF_EMISSION_BREAKDOWN = {
             entericFermentation: 40,
             feedProduction: 26,
             manureManagement: 10,
@@ -993,31 +679,35 @@ class Calculator {
             retail: 3,
             other: 5
         };
-
-        const labels = {
-            entericFermentation: '肠道发酵 (40%)',
-            feedProduction: '饲料生产 (26%)',
-            manureManagement: '粪便管理 (10%)',
-            farmEnergyUse: '农场能源使用 (7%)',
-            processing: '加工处理 (4%)',
-            transportation: '运输配送 (5%)',
-            retail: '零售环节 (3%)',
-            other: '其他 (5%)'
-        };
-
-        // 创建简单的可视化
-        let html = '<div class="breakdown-bars">';
-        for (const [key, value] of Object.entries(breakdown)) {
-            html += `
-                <div class="breakdown-item">
-                    <div class="breakdown-label">${labels[key]}</div>
-                    <div class="breakdown-bar" style="width: ${value}%;">
-                        <div class="breakdown-value">${value}%</div>
-                    </div>
-                </div>
-            `;
-        }
-        html += '</div>';
-        breakdownChart.innerHTML = html;
     }
-};
+}
+
+// 使用降级方案初始化计算器
+function initCalculatorWithFallback() {
+    try {
+        // 创建并初始化计算器实例
+        const calculator = new Calculator();
+        calculator.init();
+        console.log('计算器初始化成功');
+    } catch (error) {
+        console.error('计算器初始化失败:', error);
+        // 显示降级模式消息
+        try {
+            const resultsSection = document.getElementById('results-section');
+            if (resultsSection) {
+                resultsSection.style.display = 'block';
+                resultsSection.innerHTML = `
+                    <div class="fallback-message">
+                        <h3>降级模式已启用</h3>
+                        <p>计算器正在使用备用功能，请刷新页面或检查您的网络连接。</p>
+                    </div>
+                `;
+            }
+        } catch (fallbackError) {
+            console.error('无法显示降级模式消息:', fallbackError);
+        }
+    }
+}
+
+// 页面加载完成后初始化
+window.addEventListener('DOMContentLoaded', initializePage);

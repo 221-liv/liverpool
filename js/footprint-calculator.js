@@ -1,216 +1,236 @@
-// 碳足迹计算器核心模块
+// Carbon Footprint Calculator - 碳足迹计算核心功能
 
 class CarbonFootprintCalculator {
     constructor() {
-        // 使用常量文件中的排放系数
-        this.emissionFactors = window.EMISSION_FACTORS || {};
+        // 定义排放因子（每单位活动的碳排放量，单位：kg CO₂e）
+        this.emissionFactors = {
+            transportation: {
+                walking: 0,
+                cycling: 0,
+                bus: 0.089,
+                subway: 0.041,
+                taxi: 0.159,
+                car_small: 0.122,
+                car_medium: 0.172,
+                car_large: 0.221,
+                motorcycle: 0.091,
+                train: 0.035,
+                plane_domestic: 0.255,
+                plane_international: 0.195
+            },
+            energy: {
+                electricity: 0.583,
+                natural_gas: 2.2,
+                coal: 3.5,
+                oil: 2.8
+            },
+            diet: {
+                beef: 27.0,
+                pork: 12.0,
+                chicken: 6.0,
+                eggs: 4.8,
+                milk: 3.0,
+                rice: 3.0,
+                wheat: 2.5,
+                vegetables: 2.0,
+                fruits: 1.1,
+                grains: 2.7
+            }
+        };
+        
+        // 初始化用户记录和统计数据
+        this.userRecords = [];
+        this.userTotalCarbon = 0;
     }
     
-    // 计算交通活动的碳足迹
-    calculateTransportationEmission(transportType, distance) {
-        if (!transportType || typeof distance !== 'number' || distance < 0) {
+    // 计算单个活动的碳排放量
+    calculateActivityEmission(activityType, activity, amount) {
+        try {
+            // 获取对应活动类型的排放因子
+            const factor = this.emissionFactors[activityType] && this.emissionFactors[activityType][activity];
+            if (typeof factor !== 'number') {
+                throw new Error(`未找到活动类型 ${activityType} 的排放因子: ${activity}`);
+            }
+            
+            // 计算排放量 = 活动量 * 排放因子
+            return amount * factor;
+        } catch (error) {
+            console.error('计算活动排放量时出错:', error);
+            // 返回一个默认值以避免计算中断
             return 0;
         }
-        
-        const factor = this.emissionFactors.transportation?.[transportType] || 0;
-        return distance * factor;
     }
     
-    // 计算能源消耗的碳足迹
-    calculateEnergyEmission(energyType, amount) {
-        if (!energyType || typeof amount !== 'number' || amount < 0) {
-            return 0;
-        }
-        
-        const factor = this.emissionFactors.energy?.[energyType] || 0;
-        return amount * factor;
-    }
-    
-    // 计算饮食的碳足迹
-    calculateDietEmission(foodType, amount) {
-        if (!foodType || typeof amount !== 'number' || amount < 0) {
-            return 0;
-        }
-        
-        const factor = this.emissionFactors.diet?.[foodType] || 0;
-        return amount * factor;
-    }
-    
-    // 计算单个活动的碳足迹
-    calculateActivityEmission(activityType, itemType, amount) {
-        switch (activityType) {
-            case 'transportation':
-                return this.calculateTransportationEmission(itemType, amount);
-            case 'energy':
-                return this.calculateEnergyEmission(itemType, amount);
-            case 'diet':
-                return this.calculateDietEmission(itemType, amount);
-            default:
-                console.warn('未知的活动类型:', activityType);
-                return 0;
-        }
-    }
-    
-    // 计算多个活动的总碳足迹
-    calculateTotalEmission(activities) {
-        if (!Array.isArray(activities)) {
-            return 0;
-        }
-        
-        return activities.reduce((total, activity) => {
-            const { type, item, amount } = activity;
-            return total + this.calculateActivityEmission(type, item, amount);
-        }, 0);
-    }
-    
-    // 比较两种活动选择的碳足迹差异
+    // 比较两个选项的碳排放量
     compareEmissions(option1, option2) {
-        const emission1 = this.calculateActivityEmission(
-            option1.type, 
-            option1.item, 
-            option1.amount
-        );
-        
-        const emission2 = this.calculateActivityEmission(
-            option2.type, 
-            option2.item, 
-            option2.amount
-        );
-        
-        return {
-            option1: {
-                ...option1,
-                emission: emission1
-            },
-            option2: {
-                ...option2,
-                emission: emission2
-            },
-            difference: Math.abs(emission1 - emission2),
-            savings: Math.max(0, Math.max(emission1, emission2) - Math.min(emission1, emission2)),
-            lowerOption: emission1 < emission2 ? 'option1' : 'option2'
-        };
+        try {
+            // 计算两个选项的碳排放量
+            const emission1 = this.calculateActivityEmission(option1.type, option1.item, option1.amount);
+            const emission2 = this.calculateActivityEmission(option2.type, option2.item, option2.amount);
+            
+            // 返回比较结果
+            return {
+                option1: { ...option1, emission: emission1 },
+                option2: { ...option2, emission: emission2 },
+                difference: Math.abs(emission1 - emission2),
+                savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
+                lowerOption: emission1 < emission2 ? 'option1' : 'option2'
+            };
+        } catch (error) {
+            console.error('比较碳排放量时出错:', error);
+            // 返回默认结果以避免计算中断
+            return {
+                option1: { ...option1, emission: 0 },
+                option2: { ...option2, emission: 0 },
+                difference: 0,
+                savings: 0,
+                lowerOption: 'option1'
+            };
+        }
     }
     
-    // 获取活动类型的排放系数说明
-    getEmissionFactorInfo(activityType, itemType) {
-        const factors = this.emissionFactors[activityType];
-        if (!factors || !factors[itemType]) {
-            return null;
-        }
-        
-        let unit, description;
-        
-        switch (activityType) {
-            case 'transportation':
-                unit = 'kg CO2e/km';
-                description = '每公里碳排放系数';
-                break;
-            case 'energy':
-                switch (itemType) {
-                    case 'electricity':
-                        unit = 'kg CO2e/kWh';
-                        break;
-                    case 'natural_gas':
-                        unit = 'kg CO2e/m³';
-                        break;
-                    case 'coal':
-                        unit = 'kg CO2e/kg';
-                        break;
-                    case 'gasoline':
-                    case 'diesel':
-                        unit = 'kg CO2e/L';
-                        break;
-                    default:
-                        unit = 'kg CO2e/单位';
-                }
-                description = '能源消耗碳排放系数';
-                break;
-            case 'diet':
-                unit = 'kg CO2e/kg';
-                description = '食物生产碳排放系数';
-                break;
-            default:
-                unit = 'kg CO2e/单位';
-                description = '碳排放系数';
-        }
-        
-        return {
-            value: factors[itemType],
-            unit,
-            description
-        };
+    // 获取排放系数信息
+    getEmissionFactors(category) {
+        return this.emissionFactors[category] || {};
     }
     
-    // 根据碳足迹值提供环保建议
+    // 获取单位信息
+    getUnit(type) {
+        const unitMap = {
+            transportation: 'kg/km',
+            energy: 'kg/kWh',
+            diet: 'kg/kg'
+        };
+        return unitMap[type] || 'kg';
+    }
+    
+    // 获取活动描述
+    getActivityDescription(type, activity) {
+        const descriptions = {
+            transportation: {
+                walking: '步行是零碳排放的出行方式',
+                cycling: '骑自行车是环保的出行选择',
+                bus: '乘坐公交车比私家车更环保',
+                subway: '地铁是城市中最环保的公共交通之一',
+                taxi: '出租车碳排放较高',
+                car_small: '小型汽车的碳排放量相对较低',
+                car_medium: '中型汽车的碳排放量中等',
+                car_large: '大型汽车的碳排放量较高',
+                motorcycle: '摩托车的碳排放量相对较高',
+                train: '乘坐火车比飞机更环保',
+                plane_domestic: '国内航班的碳排放量较高',
+                plane_international: '国际航班的碳排放量较高'
+            },
+            diet: {
+                beef: '牛肉的碳足迹非常高，主要来自肠道发酵和饲料生产',
+                pork: '猪肉的碳足迹较高',
+                chicken: '鸡肉的碳足迹比牛肉和猪肉低',
+                eggs: '鸡蛋的碳足迹相对较低',
+                milk: '牛奶的碳足迹中等',
+                rice: '大米生产需要大量水资源和能源',
+                wheat: '小麦的碳足迹相对较低',
+                vegetables: '蔬菜的碳足迹通常很低',
+                fruits: '水果的碳足迹通常很低',
+                grains: '谷物的碳足迹相对较低'
+            }
+        };
+        return descriptions[type] && descriptions[type][activity] || '未知活动';
+    }
+    
+    // 获取碳减排建议
     getCarbonReductionTips(carbonAmount, activityType) {
         const tips = [];
         
-        if (carbonAmount > 100) { // 高碳足迹
-            switch (activityType) {
-                case 'transportation':
-                    tips.push('考虑使用公共交通工具替代私家车');
-                    tips.push('对于短途出行，尝试步行或骑行');
-                    tips.push('合理规划路线，减少不必要的出行');
-                    break;
-                case 'energy':
-                    tips.push('使用节能电器，及时关闭不使用的设备');
-                    tips.push('考虑使用可再生能源，如太阳能');
-                    tips.push('改善家庭 insulation，减少供暖和制冷需求');
-                    break;
-                case 'diet':
-                    tips.push('减少肉类特别是红肉的摄入');
-                    tips.push('选择本地和季节性食物');
-                    tips.push('减少食物浪费');
-                    break;
-            }
-        } else if (carbonAmount > 10) { // 中等碳足迹
-            tips.push('继续努力，可以进一步优化您的选择');
-            tips.push('关注日常小习惯，积少成多');
-        } else { // 低碳足迹
-            tips.push('做得很好！您的选择对环境非常友好');
-            tips.push('分享您的经验，鼓励他人也采取行动');
+        // 根据碳排放量提供不同级别的建议
+        if (carbonAmount > 10) {
+            tips.push('您的选择产生了较高的碳排放量，考虑以下建议:');
+        } else if (carbonAmount > 2) {
+            tips.push('您的选择产生了中等水平的碳排放量，以下是一些优化建议:');
+        } else {
+            tips.push('您的选择已经相对环保，继续保持！');
+        }
+        
+        // 根据活动类型提供具体建议
+        if (activityType === 'transportation') {
+            tips.push('尽可能选择步行或骑自行车进行短途出行');
+            tips.push('使用公共交通工具，如公交车或地铁');
+            tips.push('如果必须开车，考虑拼车或选择小型汽车');
+            tips.push('对于长途旅行，考虑乘坐火车而非飞机');
+        } else if (activityType === 'diet') {
+            tips.push('减少红肉（特别是牛肉）的消费频率');
+            tips.push('增加植物性食品在饮食中的比例');
+            tips.push('选择本地生产的食物，减少运输碳足迹');
+            tips.push('减少食物浪费，合理规划采购和烹饪');
+        } else {
+            tips.push('选择更环保的选项可以显著减少碳排放');
+            tips.push('考虑活动的频率和规模，减少不必要的消费');
         }
         
         return tips;
     }
     
-    // 估算碳足迹相当于多少棵树一年吸收的量
+    // 计算等效需要种植的树木数量（假设一棵树一年吸收21.77公斤CO2）
     calculateEquivalentTrees(carbonAmount) {
-        // 假设一棵树一年平均吸收21.77公斤CO2
-        const carbonPerTreePerYear = 21.77;
-        return carbonAmount / carbonPerTreePerYear;
+        const treeAbsorptionRate = 21.77; // 一棵树一年吸收的CO2量（kg）
+        return carbonAmount / treeAbsorptionRate;
     }
     
-    // 保存计算记录
+    // 初始化计算器
+    init() {
+        console.log('碳足迹计算器初始化完成');
+        // 绑定计算按钮事件
+        this.bindCalculateButton();
+    }
+    
+    // 绑定计算按钮事件
+    bindCalculateButton() {
+        try {
+            const calculateBtn = document.getElementById('calculate-btn');
+            if (calculateBtn) {
+                calculateBtn.addEventListener('click', () => {
+                    console.log('计算按钮被点击');
+                    // 这里通常会调用页面上的计算方法
+                    // 具体实现由页面逻辑处理
+                });
+            }
+        } catch (error) {
+            console.error('绑定计算按钮事件时出错:', error);
+        }
+    }
+    
+    // 保存记录
     saveRecord(record) {
-        const calculator = this;
         return new Promise((resolve, reject) => {
             try {
+                // 获取存储键
+                const STORAGE_KEYS = window.STORAGE_KEYS || {};
+                const RECORDS_KEY = STORAGE_KEYS.USER_RECORDS || 'carbon_footprint_records';
+                
                 // 获取现有记录
-                const records = utils.storage.get(STORAGE_KEYS.USER_RECORDS) || [];
+                const utils = window.utils || {};
+                const existingRecords = utils.storage?.get(RECORDS_KEY) || [];
                 
-                // 添加新记录
-                const newRecord = {
-                    id: utils.generateId(),
-                    timestamp: new Date().toISOString(),
-                    ...record
-                };
-                
-                records.unshift(newRecord);
-                
-                // 限制记录数量，只保留最新的100条
-                if (records.length > 100) {
-                    records.splice(100);
+                // 确保记录有ID和时间戳
+                if (!record.id) {
+                    record.id = utils.generateId ? utils.generateId() : Date.now().toString();
+                }
+                if (!record.timestamp) {
+                    record.timestamp = new Date().toISOString();
                 }
                 
-                // 保存到本地存储
-                const saved = utils.storage.set(STORAGE_KEYS.USER_RECORDS, records);
+                // 添加新记录
+                existingRecords.unshift(record);
                 
-                if (saved) {
+                // 限制记录数量
+                if (existingRecords.length > 100) {
+                    existingRecords.splice(100);
+                }
+                
+                // 保存回存储
+                if (utils.storage?.set(RECORDS_KEY, existingRecords)) {
                     // 更新用户总碳足迹
-                    calculator.updateUserTotalCarbon();
-                    resolve(newRecord);
+                    this.updateUserTotalCarbon();
+                    resolve(record);
                 } else {
                     reject(new Error('保存记录失败'));
                 }
@@ -224,129 +244,103 @@ class CarbonFootprintCalculator {
     // 更新用户总碳足迹
     updateUserTotalCarbon() {
         try {
-            const records = utils.storage.get(STORAGE_KEYS.USER_RECORDS) || [];
-            const userInfo = utils.storage.get(STORAGE_KEYS.USER_INFO) || {};
+            const STORAGE_KEYS = window.STORAGE_KEYS || {};
+            const RECORDS_KEY = STORAGE_KEYS.USER_RECORDS || 'carbon_footprint_records';
+            const utils = window.utils || {};
+            
+            // 获取所有记录
+            const records = utils.storage?.get(RECORDS_KEY) || [];
             
             // 计算总碳足迹
-            const totalCarbon = records.reduce((total, record) => {
-                return total + (record.totalEmission || 0);
-            }, 0);
+            let totalCarbon = 0;
+            records.forEach(record => {
+                if (record.totalEmission) {
+                    totalCarbon += record.totalEmission;
+                }
+            });
             
-            // 更新用户信息
-            userInfo.totalCarbon = totalCarbon;
-            utils.storage.set(STORAGE_KEYS.USER_INFO, userInfo);
+            this.userTotalCarbon = totalCarbon;
+            console.log('更新用户总碳足迹:', totalCarbon);
             
-            // 更新班级排名
-            this.updateClassRanking(userInfo);
-            
-            return totalCarbon;
+            // 可选：更新班级排名
+            this.updateClassRanking();
         } catch (error) {
             console.error('更新用户总碳足迹时出错:', error);
-            return 0;
         }
     }
     
     // 更新班级排名
-    updateClassRanking(userInfo) {
+    updateClassRanking() {
         try {
-            // 获取班级排名数据
-            let ranking = utils.storage.get(STORAGE_KEYS.CLASS_RANKING) || [];
-            
-            // 查找当前用户
-            const userIndex = ranking.findIndex(user => user.name === userInfo.name);
-            
-            if (userIndex >= 0) {
-                // 更新现有用户数据
-                ranking[userIndex].totalCarbon = userInfo.totalCarbon || 0;
-            } else if (userInfo.name) {
-                // 添加新用户
-                ranking.push({
-                    name: userInfo.name,
-                    studentId: userInfo.studentId || '',
-                    totalCarbon: userInfo.totalCarbon || 0,
-                    lastUpdated: new Date().toISOString()
-                });
-            }
-            
-            // 添加一些模拟数据（如果排名数据太少）
-            if (ranking.length < 8) {
-                const mockUsers = window.MOCK_CLASS_USERS || [];
-                mockUsers.forEach(mockUser => {
-                    if (!ranking.find(user => user.name === mockUser.name)) {
-                        ranking.push({
-                            name: mockUser.name,
-                            studentId: mockUser.studentId,
-                            totalCarbon: Math.random() * 500, // 随机碳足迹
-                            lastUpdated: new Date().toISOString()
-                        });
-                    }
-                });
-            }
-            
-            // 按碳足迹值排序（升序，低碳足迹排名靠前）
-            ranking.sort((a, b) => (a.totalCarbon || 0) - (b.totalCarbon || 0));
-            
-            // 保存排名数据
-            utils.storage.set(STORAGE_KEYS.CLASS_RANKING, ranking);
-            
-            return ranking;
+            // 这里可以实现班级排名逻辑
+            // 例如：保存用户总碳足迹到班级排名数据中
+            console.log('班级排名更新逻辑');
         } catch (error) {
             console.error('更新班级排名时出错:', error);
-            return [];
         }
     }
     
-    // 获取用户记录
-    getUserRecords(limit = 100) {
-        const records = utils.storage.get(STORAGE_KEYS.USER_RECORDS) || [];
-        return records.slice(0, limit);
-    }
-    
-    // 获取班级排名
-    getClassRanking() {
-        return utils.storage.get(STORAGE_KEYS.CLASS_RANKING) || [];
-    }
-    
-    // 获取统计数据
-    getStatistics() {
-        const records = this.getUserRecords();
-        const ranking = this.getClassRanking();
-        
-        // 计算总碳排放量
-        const totalEmission = records.reduce((sum, record) => sum + (record.totalEmission || 0), 0);
-        
-        // 计算平均碳排放量
-        const averageEmission = records.length > 0 ? totalEmission / records.length : 0;
-        
-        // 计算班级平均碳排放量
-        const classAverageEmission = ranking.length > 0 
-            ? ranking.reduce((sum, user) => sum + (user.totalCarbon || 0), 0) / ranking.length 
-            : 0;
-        
-        // 统计不同活动类型的碳排放
-        const emissionsByType = {};
-        records.forEach(record => {
-            if (record.activityType) {
-                const type = record.activityType;
-                emissionsByType[type] = (emissionsByType[type] || 0) + (record.totalEmission || 0);
-            }
-        });
-        
-        return {
-            totalRecords: records.length,
-            totalEmission,
-            averageEmission,
-            classAverageEmission,
-            emissionsByType,
-            classSize: ranking.length
-        };
+    // 获取用户碳足迹统计
+    getUserStatistics() {
+        try {
+            const STORAGE_KEYS = window.STORAGE_KEYS || {};
+            const RECORDS_KEY = STORAGE_KEYS.USER_RECORDS || 'carbon_footprint_records';
+            const utils = window.utils || {};
+            
+            // 获取所有记录
+            const records = utils.storage?.get(RECORDS_KEY) || [];
+            
+            // 计算统计数据
+            const stats = {
+                totalRecords: records.length,
+                totalCarbonSaved: 0,
+                totalTreesSaved: 0,
+                breakdownByType: {}
+            };
+            
+            records.forEach(record => {
+                if (record.savings) {
+                    stats.totalCarbonSaved += record.savings;
+                    stats.totalTreesSaved += this.calculateEquivalentTrees(record.savings);
+                }
+                
+                // 按活动类型统计
+                const activityType = record.activityType || 'unknown';
+                if (!stats.breakdownByType[activityType]) {
+                    stats.breakdownByType[activityType] = 0;
+                }
+                stats.breakdownByType[activityType] += record.totalEmission || 0;
+            });
+            
+            return stats;
+        } catch (error) {
+            console.error('获取用户统计数据时出错:', error);
+            return {
+                totalRecords: 0,
+                totalCarbonSaved: 0,
+                totalTreesSaved: 0,
+                breakdownByType: {}
+            };
+        }
     }
 }
 
 // 创建全局计算器实例
-window.carbonCalculator = new CarbonFootprintCalculator();
-
-// 导出类供其他模块使用
-if (typeof module !== 'undefined') {
-    module.exports = CarbonFootprintCalculator;
-}
+(function() {
+    // 确保window对象存在
+    if (typeof window !== 'undefined') {
+        // 防止重复创建
+        if (!window.carbonCalculator) {
+            // 创建新的计算器实例
+            window.carbonCalculator = new CarbonFootprintCalculator();
+            console.log('碳足迹计算器全局实例已创建');
+            
+            // 尝试初始化
+            try {
+                window.carbonCalculator.init();
+            } catch (error) {
+                console.error('计算器初始化失败，但不影响核心功能:', error);
+            }
+        }
+    }
+})();
