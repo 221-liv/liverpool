@@ -928,7 +928,7 @@ function handleSaveRecord() {
             return;
         }
         
-        // 安全获取用户信息，支持匿名模式
+        // 默认使用匿名模式，优先支持未登录用户
         let userInfo = { 
             id: 'anon_' + Date.now(),
             name: '匿名用户',
@@ -937,20 +937,23 @@ function handleSaveRecord() {
         
         let isAnonymous = true;
         
-        // 尝试获取用户信息但不强制要求
+        // 尝试获取用户信息，但不强制要求登录
         try {
-            userInfo = utils.storage.get(STORAGE_KEYS.USER_INFO) || userInfo;
-            isAnonymous = !userInfo || userInfo.isAnonymous;
+            const savedUserInfo = utils.storage?.get ? utils.storage.get(STORAGE_KEYS?.USER_INFO) : null;
+            if (savedUserInfo && !savedUserInfo.isAnonymous) {
+                userInfo = savedUserInfo;
+                isAnonymous = false;
+            }
         } catch (userInfoError) {
-            console.warn('获取用户信息出错，使用匿名模式:', userInfoError);
+            console.log('使用匿名模式保存记录');
         }
         
         // 创建记录对象 - 确保所有必要字段都存在
         const record = {
             id: utils.generateId ? utils.generateId() : Date.now().toString(),
-            userId: isAnonymous ? 'anonymous' : (userInfo.name || 'unknown'),
-            userName: isAnonymous ? '匿名用户' : (userInfo.name || '未知用户'),
-            studentId: isAnonymous ? '' : (userInfo.studentId || ''),
+            userId: isAnonymous ? 'anonymous_' + Date.now() : (userInfo.name || 'unknown'),
+            userName: isAnonymous ? '访客' : (userInfo.name || '未知用户'),
+            studentId: isAnonymous ? 'guest' : (userInfo.studentId || ''),
             activityType: 'transportation',
             option1: {
                 type: currentCalculation?.option1?.type || 'transportation',
@@ -971,95 +974,80 @@ function handleSaveRecord() {
             ),
             notes: document.getElementById('record-notes')?.value || '',
             timestamp: new Date().toISOString(),
-            isAnonymous: isAnonymous
+            isAnonymous: isAnonymous,
+            sessionId: sessionStorage.getItem('sessionId') || (() => {
+                const sessionId = 'session_' + Date.now();
+                sessionStorage.setItem('sessionId', sessionId);
+                return sessionId;
+            })()
         };
         
-        // 尝试使用carbonCalculator保存
+        // 简化保存逻辑，直接使用localStorage作为主要存储方式
+        // 这样可以确保即使carbonCalculator不可用，也能正常保存记录
         try {
-            if (window.carbonCalculator && typeof window.carbonCalculator.saveRecord === 'function') {
-                window.carbonCalculator.saveRecord(record)
-                    .then(savedRecord => {
-                        // 如果有用户信息，更新用户总碳排放量
-                        if (userInfo && !isAnonymous) {
-                            try {
-                                userInfo.totalCarbon = (userInfo.totalCarbon || 0) + record.totalEmission;
-                                userInfo.lastUpdated = new Date().toISOString();
-                                utils.storage.set(STORAGE_KEYS.USER_INFO, userInfo);
-                                
-                                // 更新班级排名数据
-                                if (typeof updateClassRanking === 'function') {
-                                    updateClassRanking(userInfo);
-                                }
-                            } catch (updateError) {
-                                console.error('更新用户信息出错:', updateError);
-                                // 静默失败，不影响主流程
-                            }
-                        }
-                        
-                        utils.showNotification(isAnonymous ? '匿名记录已保存' : '记录已保存', 'success');
-                        // 重置表单
-                        if (document.getElementById('record-notes')) document.getElementById('record-notes').value = '';
-                        if (document.getElementById('save-btn')) document.getElementById('save-btn').disabled = true;
-                    })
-                    .catch(error => {
-                        console.error('保存记录失败，尝试本地存储:', error);
-                        // 尝试使用localStorage作为备用
-                        saveToLocalStorage(record);
-                    });
-            } else {
-                // 如果carbonCalculator不可用，直接使用localStorage
-                console.warn('carbonCalculator不可用，使用本地存储');
-                saveToLocalStorage(record);
-            }
-        } catch (error) {
-            console.error('保存过程出错，尝试备用方案:', error);
-            saveToLocalStorage(record);
-        }
-        
-        // 辅助函数：保存到localStorage作为备用
-        function saveToLocalStorage(recordToSave) {
+            let records = [];
+            
+            // 获取现有记录
             try {
-                let records = [];
-                // 获取现有记录
-                try {
-                    const storedRecords = localStorage.getItem('carbonRecords');
-                    if (storedRecords) {
-                        records = JSON.parse(storedRecords);
-                        if (!Array.isArray(records)) records = [];
-                    }
-                } catch (parseError) {
-                    console.error('解析现有记录出错:', parseError);
-                    records = [];
+                const storedRecords = localStorage.getItem('carbonRecords');
+                if (storedRecords) {
+                    records = JSON.parse(storedRecords);
+                    if (!Array.isArray(records)) records = [];
                 }
-                
-                records.push(recordToSave);
-                
-                // 限制记录数量，避免localStorage溢出
-                if (records.length > 1000) {
-                    records = records.slice(-1000);
-                    console.warn('记录数量过多，已限制为最近1000条');
-                }
-                
-                localStorage.setItem('carbonRecords', JSON.stringify(records));
-                utils.showNotification(isAnonymous ? '匿名记录已保存到本地' : '记录已保存到本地', 'success');
-                
-                // 重置表单
-                if (document.getElementById('record-notes')) document.getElementById('record-notes').value = '';
-                if (document.getElementById('save-btn')) document.getElementById('save-btn').disabled = true;
-                
-                if (isAnonymous) {
-                    setTimeout(() => {
-                        utils.showNotification('提示：匿名记录将存储在本地浏览器中', 'info');
-                    }, 1500);
-                }
-            } catch (saveError) {
-                console.error('本地存储也失败:', saveError);
-                utils.showNotification('保存记录失败，请检查浏览器存储权限', 'error');
+            } catch (parseError) {
+                console.warn('解析现有记录出错，创建新记录列表:', parseError);
+                records = [];
             }
+            
+            // 添加新记录
+            records.push(record);
+            
+            // 限制记录数量
+            if (records.length > 1000) {
+                records = records.slice(-1000);
+            }
+            
+            // 保存到localStorage
+            localStorage.setItem('carbonRecords', JSON.stringify(records));
+            
+            // 对于已登录用户，更新用户信息（不影响未登录用户）
+            if (!isAnonymous && userInfo) {
+                try {
+                    userInfo.totalCarbon = (userInfo.totalCarbon || 0) + record.totalEmission;
+                    userInfo.lastUpdated = new Date().toISOString();
+                    if (utils.storage?.set) {
+                        utils.storage.set(STORAGE_KEYS?.USER_INFO, userInfo);
+                    }
+                } catch (updateError) {
+                    // 静默失败，不影响主流程
+                }
+            }
+            
+            // 显示成功提示
+            utils.showNotification(isAnonymous ? '记录已保存' : '记录已保存', 'success');
+            
+            // 重置表单
+            if (document.getElementById('record-notes')) {
+                document.getElementById('record-notes').value = '';
+            }
+            if (document.getElementById('save-btn')) {
+                document.getElementById('save-btn').disabled = true;
+            }
+            
+            // 可选提示：如果是匿名用户，可以建议登录以获得更好体验
+            if (isAnonymous) {
+                setTimeout(() => {
+                    utils.showNotification('提示：登录后可同步您的记录并参与班级排名', 'info');
+                }, 1200);
+            }
+            
+        } catch (saveError) {
+            console.error('保存记录失败:', saveError);
+            utils.showNotification('保存记录失败，请重试', 'error');
         }
         
     } catch (error) {
-        console.error('处理保存记录时发生未预期的错误:', error);
+        console.error('处理保存记录时发生错误:', error);
         utils.showNotification('保存操作遇到问题，请重试', 'error');
     }
 }
@@ -1072,17 +1060,69 @@ function initRecordsPage() {
     loadUserRecords();
 }
 
-// 加载用户记录 - 改进错误处理
+// 加载用户记录 - 支持访客模式和本地存储
 function loadUserRecords() {
     try {
-        const records = window.carbonCalculator.getUserRecords();
+        // 获取会话ID和用户信息（支持未登录状态）
+        const sessionId = sessionStorage.getItem('sessionId') || 'guest_session';
+        let isAnonymous = true;
+        let userInfo = null;
+        
+        try {
+            const savedUserInfo = utils.storage?.get ? utils.storage.get(STORAGE_KEYS?.USER_INFO) : null;
+            if (savedUserInfo && !savedUserInfo.isAnonymous) {
+                userInfo = savedUserInfo;
+                isAnonymous = false;
+            }
+        } catch (userInfoError) {
+            console.log('使用访客模式加载记录');
+        }
+        
+        // 从localStorage加载记录
+        let allRecords = [];
+        try {
+            const storedRecords = localStorage.getItem('carbonRecords');
+            if (storedRecords) {
+                allRecords = JSON.parse(storedRecords);
+                if (!Array.isArray(allRecords)) allRecords = [];
+            }
+        } catch (parseError) {
+            console.warn('解析记录出错，使用空记录列表:', parseError);
+            allRecords = [];
+        }
+        
+        // 过滤当前用户/会话的记录
+        let filteredRecords = [];
+        if (isAnonymous) {
+            // 访客模式：显示当前会话的记录和未关联会话的匿名记录
+            filteredRecords = allRecords.filter(record => 
+                record.sessionId === sessionId || 
+                (record.isAnonymous === true && !record.sessionId)
+            );
+        } else if (userInfo) {
+            // 已登录用户：显示其个人记录
+            filteredRecords = allRecords.filter(record => 
+                !record.isAnonymous && 
+                (record.userId === userInfo.name || 
+                 record.userName === userInfo.name || 
+                 record.studentId === userInfo.studentId)
+            );
+        }
+        
+        // 按时间倒序排序
+        filteredRecords.sort((a, b) => {
+            const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+            const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+            return dateB - dateA;
+        });
+        
         const recordsTableBody = document.getElementById('records-table-body');
         
         if (recordsTableBody) {
             // 清空表格
             recordsTableBody.innerHTML = '';
             
-            if (records.length === 0) {
+            if (filteredRecords.length === 0) {
                 // 显示空记录提示
                 const emptyRow = document.createElement('tr');
                 emptyRow.innerHTML = `
@@ -1093,7 +1133,7 @@ function loadUserRecords() {
                 recordsTableBody.appendChild(emptyRow);
             } else {
                 // 填充记录数据
-                records.forEach(record => {
+                filteredRecords.forEach(record => {
                     const row = document.createElement('tr');
                     
                     try {
@@ -1105,7 +1145,7 @@ function loadUserRecords() {
                         
                         row.innerHTML = `
                             <td>${utils.formatDate(record.timestamp || new Date(), 'YYYY-MM-DD HH:mm')}</td>
-                            <td>${record.studentId || '-'}</td>
+                            <td>${record.studentId || '访客'}</td>
                             <td>${getTransportLabel(record.option1?.item)}</td>
                             <td>${getTransportLabel(record.option2?.item)}</td>
                             <td>${utils.formatCarbonEmission(record.totalEmission || 0)}</td>
@@ -1122,9 +1162,15 @@ function loadUserRecords() {
             }
         }
         
-        // 更新统计信息
+        // 计算并更新统计信息
         try {
-            const stats = window.carbonCalculator.getStatistics();
+            const stats = {
+                totalRecords: filteredRecords.length,
+                totalEmission: filteredRecords.reduce((sum, record) => sum + (record.totalEmission || 0), 0),
+                averageEmission: filteredRecords.length > 0 ? 
+                    (filteredRecords.reduce((sum, record) => sum + (record.totalEmission || 0), 0) / filteredRecords.length) : 0
+            };
+            
             const statsTotalRecords = document.getElementById('stats-total-records');
             const statsTotalEmission = document.getElementById('stats-total-emission');
             const statsAverageEmission = document.getElementById('stats-average-emission');
@@ -1135,6 +1181,14 @@ function loadUserRecords() {
         } catch (statsError) {
             console.error('更新统计信息出错:', statsError);
         }
+        
+        // 访客模式提示
+        if (isAnonymous) {
+            setTimeout(() => {
+                utils.showNotification('您正在访客模式下查看记录', 'info');
+            }, 1000);
+        }
+        
     } catch (error) {
         console.error('加载记录出错:', error);
         const recordsTableBody = document.getElementById('records-table-body');

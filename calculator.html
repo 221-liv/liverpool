@@ -81,9 +81,10 @@
                 console.error('获取用户信息失败:', error);
             }
             
-            // 如果未登录，跳转到登录页面
+            // 可选登录，不强制跳转
+            // 保留用户信息检查，用于后续功能判断
             if (!userInfo) {
-                window.location.href = 'login.html';
+                console.log('用户未登录，以访客模式使用计算器');
             }
             
             // 更新导航栏
