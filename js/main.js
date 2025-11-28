@@ -571,6 +571,41 @@ function initCalculatorPage() {
             console.log('创建了新的碳足迹计算器实例');
         }
         
+        // 扩展计算器类，添加食品碳排放计算能力
+        if (window.carbonCalculator && !window.carbonCalculator.calculateFoodEmission) {
+            // 增强calculateEmission方法，支持食品类型
+            const originalCalculateEmission = window.carbonCalculator.calculateEmission;
+            window.carbonCalculator.calculateFoodEmission = function(foodType, amount) {
+                const factor = window.EMISSION_FACTORS?.diet?.[foodType] || 0;
+                return (amount || 0) * factor;
+            };
+            
+            // 重写calculateEmission方法，支持多种类型
+            window.carbonCalculator.calculateEmission = function(item) {
+                try {
+                    if (item?.type === 'transportation' && item?.item && typeof item.amount === 'number') {
+                        if (originalCalculateEmission) {
+                            return originalCalculateEmission.call(this, item);
+                        }
+                        // 降级方案
+                        const factor = this.transportationFactors[item.item] || 
+                                     window.EMISSION_FACTORS?.transportation?.[item.item] || 0.2;
+                        return item.amount * factor;
+                    } else if (item?.type === 'food' && item?.item && typeof item.amount === 'number') {
+                        // 食品计算
+                        return this.calculateFoodEmission(item.item, item.amount);
+                    }
+                    return 0;
+                } catch (error) {
+                    console.error('计算排放出错:', error);
+                    return 0;
+                }
+            };
+        }
+        
+        // 初始化标签页切换
+        initTabs();
+        
         // 初始化交通方式选择器
         try {
             const transportSelect1 = document.getElementById('transport-type-1');
@@ -611,7 +646,73 @@ function initCalculatorPage() {
                 transportSelect2.value = 'bus';
             }
         } catch (selectError) {
-            console.error('初始化选择器出错:', selectError);
+            console.error('初始化交通选择器出错:', selectError);
+        }
+        
+        // 初始化食品选择器
+        try {
+            const foodSelect1 = document.getElementById('food-type-1');
+            const foodSelect2 = document.getElementById('food-type-2');
+            
+            if (foodSelect1 && foodSelect2) {
+                const dietOptions = window.DIET_OPTIONS || [
+                    { value: 'beef', label: '牛肉', category: '肉类' },
+                    { value: 'pork', label: '猪肉', category: '肉类' },
+                    { value: 'chicken', label: '鸡肉', category: '肉类' },
+                    { value: 'eggs', label: '鸡蛋', category: '蛋奶类' },
+                    { value: 'milk', label: '牛奶', category: '蛋奶类' },
+                    { value: 'rice', label: '米饭', category: '谷物' },
+                    { value: 'tomato', label: '番茄', category: '蔬菜' },
+                    { value: 'lettuce', label: '生菜', category: '蔬菜' }
+                ];
+                
+                // 清空现有选项
+                foodSelect1.innerHTML = '';
+                foodSelect2.innerHTML = '';
+                
+                // 按类别分组显示
+                const categories = {};
+                dietOptions.forEach(option => {
+                    if (!categories[option.category]) {
+                        categories[option.category] = [];
+                    }
+                    categories[option.category].push(option);
+                });
+                
+                Object.keys(categories).forEach(category => {
+                    try {
+                        // 添加类别分组标题
+                        const optGroup1 = document.createElement('optgroup');
+                        const optGroup2 = document.createElement('optgroup');
+                        optGroup1.label = category;
+                        optGroup2.label = category;
+                        
+                        categories[category].forEach(option => {
+                            const opt1 = document.createElement('option');
+                            const opt2 = document.createElement('option');
+                            
+                            opt1.value = option.value;
+                            opt1.textContent = option.label;
+                            opt2.value = option.value;
+                            opt2.textContent = option.label;
+                            
+                            optGroup1.appendChild(opt1);
+                            optGroup2.appendChild(opt2);
+                        });
+                        
+                        foodSelect1.appendChild(optGroup1);
+                        foodSelect2.appendChild(optGroup2);
+                    } catch (categoryError) {
+                        console.error('添加类别选项出错:', categoryError);
+                    }
+                });
+                
+                // 设置默认值
+                foodSelect1.value = 'beef';
+                foodSelect2.value = 'chicken';
+            }
+        } catch (foodSelectError) {
+            console.error('初始化食品选择器出错:', foodSelectError);
         }
         
         // 初始化计算按钮
@@ -646,47 +747,180 @@ function initCalculatorPage() {
     }
 }
 
+// 初始化标签页切换
+function initTabs() {
+    try {
+        const transportTab = document.getElementById('transport-tab');
+        const foodTab = document.getElementById('food-tab');
+        const transportSection = document.getElementById('transport-section');
+        const foodSection = document.getElementById('food-section');
+        const transportKnowledge = document.getElementById('transport-knowledge');
+        const foodKnowledge = document.getElementById('food-knowledge');
+        
+        if (transportTab && foodTab && transportSection && foodSection) {
+            // 保存当前选中的标签类型
+            window.currentTabType = 'transportation';
+            
+            // 标签切换事件
+            transportTab.addEventListener('click', function() {
+                switchTab('transportation');
+            });
+            
+            foodTab.addEventListener('click', function() {
+                switchTab('food');
+            });
+        }
+    } catch (tabError) {
+        console.error('初始化标签页出错:', tabError);
+    }
+}
+
+// 切换标签页
+function switchTab(type) {
+    try {
+        const transportTab = document.getElementById('transport-tab');
+        const foodTab = document.getElementById('food-tab');
+        const transportSection = document.getElementById('transport-section');
+        const foodSection = document.getElementById('food-section');
+        const transportKnowledge = document.getElementById('transport-knowledge');
+        const foodKnowledge = document.getElementById('food-knowledge');
+        
+        // 更新当前标签类型
+        window.currentTabType = type;
+        
+        // 隐藏结果区域
+        const resultsSection = document.getElementById('results-section');
+        if (resultsSection) {
+            resultsSection.style.display = 'none';
+        }
+        
+        // 禁用保存按钮
+        const saveBtn = document.getElementById('save-btn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+        }
+        
+        // 移除所有标签的active状态
+        if (transportTab) transportTab.classList.remove('active');
+        if (foodTab) foodTab.classList.remove('active');
+        if (transportSection) transportSection.classList.remove('active');
+        if (foodSection) foodSection.classList.remove('active');
+        if (transportKnowledge) transportKnowledge.classList.remove('active');
+        if (foodKnowledge) foodKnowledge.classList.remove('active');
+        
+        // 根据类型显示对应内容
+        if (type === 'transportation') {
+            if (transportTab) transportTab.classList.add('active');
+            if (transportSection) transportSection.classList.add('active');
+            if (transportKnowledge) transportKnowledge.classList.add('active');
+            if (foodKnowledge) foodKnowledge.style.display = 'none';
+            if (transportKnowledge) transportKnowledge.style.display = 'block';
+        } else if (type === 'food') {
+            if (foodTab) foodTab.classList.add('active');
+            if (foodSection) foodSection.classList.add('active');
+            if (foodKnowledge) foodKnowledge.classList.add('active');
+            if (transportKnowledge) transportKnowledge.style.display = 'none';
+            if (foodKnowledge) foodKnowledge.style.display = 'block';
+        }
+    } catch (switchError) {
+        console.error('切换标签页出错:', switchError);
+    }
+}
+
+// 获取食品标签
+function getFoodLabel(foodType) {
+    try {
+        const dietOptions = window.DIET_OPTIONS || [];
+        const option = dietOptions.find(opt => opt.value === foodType);
+        return option ? option.label : foodType || '未知食品';
+    } catch (e) {
+        return foodType || '未知食品';
+    }
+}
+
 // 处理计算逻辑 - 增强错误处理和用户体验
 function handleCalculate() {
     try {
         console.log('开始碳足迹计算...');
         
-        // 安全获取DOM元素值
-        const distanceInput1 = document.getElementById('distance-1');
-        const distanceInput2 = document.getElementById('distance-2');
-        const transportSelect1 = document.getElementById('transport-type-1');
-        const transportSelect2 = document.getElementById('transport-type-2');
+        // 获取当前标签类型
+        const currentType = window.currentTabType || 'transportation';
+        let option1, option2;
         
-        // 检查DOM元素是否存在
-        if (!distanceInput1 || !distanceInput2 || !transportSelect1 || !transportSelect2) {
-            console.error('缺少必要的DOM元素');
-            utils.showNotification('页面元素加载失败，请刷新页面', 'error');
-            return;
+        if (currentType === 'transportation') {
+            // 交通方式计算
+            const distanceInput1 = document.getElementById('distance-1');
+            const distanceInput2 = document.getElementById('distance-2');
+            const transportSelect1 = document.getElementById('transport-type-1');
+            const transportSelect2 = document.getElementById('transport-type-2');
+            
+            // 检查DOM元素是否存在
+            if (!distanceInput1 || !distanceInput2 || !transportSelect1 || !transportSelect2) {
+                console.error('缺少必要的交通计算DOM元素');
+                utils.showNotification('页面元素加载失败，请刷新页面', 'error');
+                return;
+            }
+            
+            // 获取输入值
+            const distance1 = parseFloat(distanceInput1.value || '0');
+            const distance2 = parseFloat(distanceInput2.value || '0');
+            const transportType1 = transportSelect1.value || 'car_small';
+            const transportType2 = transportSelect2.value || 'bus';
+            
+            // 验证输入
+            if (isNaN(distance1) || distance1 <= 0 || isNaN(distance2) || distance2 <= 0) {
+                utils.showNotification('请输入有效的距离值（大于0）', 'error');
+                return;
+            }
+            
+            // 确保两个选项使用相同的距离
+            const distance = Math.max(distance1, distance2);
+            
+            // 创建计算选项
+            option1 = { type: 'transportation', item: transportType1, amount: distance };
+            option2 = { type: 'transportation', item: transportType2, amount: distance };
+        } else if (currentType === 'food') {
+            // 食品计算
+            const foodAmountInput1 = document.getElementById('food-amount-1');
+            const foodAmountInput2 = document.getElementById('food-amount-2');
+            const foodSelect1 = document.getElementById('food-type-1');
+            const foodSelect2 = document.getElementById('food-type-2');
+            
+            // 检查DOM元素是否存在
+            if (!foodAmountInput1 || !foodAmountInput2 || !foodSelect1 || !foodSelect2) {
+                console.error('缺少必要的食品计算DOM元素');
+                utils.showNotification('页面元素加载失败，请刷新页面', 'error');
+                return;
+            }
+            
+            // 获取输入值
+            const foodAmount1 = parseFloat(foodAmountInput1.value || '0');
+            const foodAmount2 = parseFloat(foodAmountInput2.value || '0');
+            const foodType1 = foodSelect1.value || 'beef';
+            const foodType2 = foodSelect2.value || 'chicken';
+            
+            // 验证输入
+            if (isNaN(foodAmount1) || foodAmount1 <= 0 || isNaN(foodAmount2) || foodAmount2 <= 0) {
+                utils.showNotification('请输入有效的消费量（大于0）', 'error');
+                return;
+            }
+            
+            // 创建计算选项
+            option1 = { type: 'food', item: foodType1, amount: foodAmount1 };
+            option2 = { type: 'food', item: foodType2, amount: foodAmount2 };
+            
+            // 如果选择了牛肉，显示碳足迹构成分析
+            showBeefBreakdown(foodType1 === 'beef' || foodType2 === 'beef');
         }
-        
-        // 获取输入值
-        const distance1 = parseFloat(distanceInput1.value || '0');
-        const distance2 = parseFloat(distanceInput2.value || '0');
-        const transportType1 = transportSelect1.value || 'car_small';
-        const transportType2 = transportSelect2.value || 'bus';
-        
-        // 验证输入
-        if (isNaN(distance1) || distance1 <= 0 || isNaN(distance2) || distance2 <= 0) {
-            utils.showNotification('请输入有效的距离值（大于0）', 'error');
-            return;
-        }
-        
-        // 确保两个选项使用相同的距离
-        const distance = Math.max(distance1, distance2);
         
         // 创建或验证计算器实例
         if (!window.carbonCalculator) {
             console.log('创建CarbonFootprintCalculator实例...');
             try {
                 window.carbonCalculator = new (window.CarbonFootprintCalculator || function() {
-                    // 应急计算器类实现
+                    // 应急计算器类实现，支持交通和食品计算
                     this.compareEmissions = function(option1, option2) {
-                        const getEmissionFactor = function(transportType) {
+                        const getTransportFactor = function(transportType) {
                             const factors = {
                                 'car_small': 0.12, // 小型汽车
                                 'car_medium': 0.18,
@@ -699,8 +933,31 @@ function handleCalculate() {
                             return factors[transportType] || 0.15; // 默认值
                         };
                         
-                        const emission1 = option1.amount * getEmissionFactor(option1.item);
-                        const emission2 = option2.amount * getEmissionFactor(option2.item);
+                        const getFoodFactor = function(foodType) {
+                            const factors = {
+                                'beef': 27,      // 牛肉
+                                'pork': 12,      // 猪肉
+                                'chicken': 6,    // 鸡肉
+                                'eggs': 4.8,     // 鸡蛋
+                                'milk': 3,       // 牛奶
+                                'rice': 3,       // 米饭
+                                'tomato': 1.75,  // 番茄
+                                'lettuce': 0.75  // 生菜
+                            };
+                            return factors[foodType] || 2; // 默认值
+                        };
+                        
+                        const getEmission = function(option) {
+                            if (option.type === 'transportation') {
+                                return option.amount * getTransportFactor(option.item);
+                            } else if (option.type === 'food') {
+                                return option.amount * getFoodFactor(option.item);
+                            }
+                            return 0;
+                        };
+                        
+                        const emission1 = getEmission(option1);
+                        const emission2 = getEmission(option2);
                         
                         return {
                             option1: { ...option1, emission: emission1 },
@@ -731,10 +988,7 @@ function handleCalculate() {
         let comparison;
         try {
             if (window.carbonCalculator && typeof window.carbonCalculator.compareEmissions === 'function') {
-                comparison = window.carbonCalculator.compareEmissions(
-                    { type: 'transportation', item: transportType1, amount: distance },
-                    { type: 'transportation', item: transportType2, amount: distance }
-                );
+                comparison = window.carbonCalculator.compareEmissions(option1, option2);
                 console.log('计算成功，使用计算器方法');
             } else {
                 throw new Error('compareEmissions方法不可用');
@@ -742,20 +996,35 @@ function handleCalculate() {
         } catch (calcError) {
             console.error('计算出错，使用降级方案:', calcError);
             // 降级方案：直接计算
-            const getEmissionFactor = function(transportType) {
-                const factors = {
-                    'car_small': 0.12, 'car_medium': 0.18, 'car_large': 0.25,
-                    'bus': 0.05, 'subway': 0.03, 'bike': 0, 'walk': 0
-                };
-                return factors[transportType] || 0.15;
+            const getEmission = function(option) {
+                if (option.type === 'transportation') {
+                    const factors = {
+                        'car_small': 0.12, 'car_medium': 0.18, 'car_large': 0.25,
+                        'bus': 0.05, 'subway': 0.03, 'bike': 0, 'walk': 0
+                    };
+                    return option.amount * (factors[option.item] || 0.15);
+                } else if (option.type === 'food') {
+                    const factors = {
+                        'beef': 27,      // 牛肉
+                        'pork': 12,      // 猪肉
+                        'chicken': 6,    // 鸡肉
+                        'eggs': 4.8,     // 鸡蛋
+                        'milk': 3,       // 牛奶
+                        'rice': 3,       // 米饭
+                        'tomato': 1.75,  // 番茄
+                        'lettuce': 0.75  // 生菜
+                    };
+                    return option.amount * (factors[option.item] || 2);
+                }
+                return 0;
             };
             
-            const emission1 = distance * getEmissionFactor(transportType1);
-            const emission2 = distance * getEmissionFactor(transportType2);
+            const emission1 = getEmission(option1);
+            const emission2 = getEmission(option2);
             
             comparison = {
-                option1: { type: 'transportation', item: transportType1, amount: distance, emission: emission1 },
-                option2: { type: 'transportation', item: transportType2, amount: distance, emission: emission2 },
+                option1: { ...option1, emission: emission1 },
+                option2: { ...option2, emission: emission2 },
                 difference: Math.abs(emission1 - emission2),
                 savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
                 lowerOption: emission1 < emission2 ? 'option1' : 'option2'
@@ -781,23 +1050,79 @@ function handleCalculate() {
     }
 }
 
+// 显示牛肉碳足迹构成分析
+function showBeefBreakdown(show) {
+    try {
+        const breakdownContainer = document.getElementById('beef-breakdown');
+        const chartContainer = breakdownContainer?.querySelector('.breakdown-chart');
+        
+        if (!breakdownContainer) return;
+        
+        if (show) {
+            breakdownContainer.style.display = 'block';
+            
+            // 创建简易的图表显示
+            if (chartContainer) {
+                const breakdownData = window.BEEF_EMISSION_BREAKDOWN || {
+                    fermentation: 40,     // 肠道发酵
+                    feed: 29,            // 饲料生产
+                    manure: 10,          // 粪便管理
+                    processing: 8,       // 加工
+                    transportation: 5,   // 运输
+                    other: 8             // 其他
+                };
+                
+                let chartHTML = '<div class="breakdown-bars">';
+                Object.entries(breakdownData).forEach(([key, value]) => {
+                    const labels = {
+                        fermentation: '肠道发酵',
+                        feed: '饲料生产',
+                        manure: '粪便管理',
+                        processing: '加工',
+                        transportation: '运输',
+                        other: '其他'
+                    };
+                    
+                    chartHTML += `
+                        <div class="breakdown-item">
+                            <div class="breakdown-label">${labels[key] || key}</div>
+                            <div class="breakdown-bar-container">
+                                <div class="breakdown-bar" style="width: ${value}%;"></div>
+                                <span class="breakdown-percentage">${value}%</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                chartHTML += '</div>';
+                
+                chartContainer.innerHTML = chartHTML;
+            }
+        } else {
+            breakdownContainer.style.display = 'none';
+        }
+    } catch (breakdownError) {
+        console.error('显示牛肉碳足迹构成分析出错:', breakdownError);
+    }
+}
+
 // 显示比较结果 - 增强错误处理
 function displayComparisonResults(comparison) {
     try {
-        // 获取交通方式标签
-        const getTransportLabel = (type) => {
+        // 获取选项标签（根据类型）
+        const getOptionLabel = (option) => {
             try {
-                const transportOptions = window.TRANSPORT_OPTIONS || [
-                    { value: 'car_small', label: '小型汽车' },
-                    { value: 'bus', label: '公交车' },
-                    { value: 'subway', label: '地铁' },
-                    { value: 'bike', label: '自行车' },
-                    { value: 'walk', label: '步行' }
-                ];
-                const option = transportOptions.find(opt => opt.value === type);
-                return option ? option.label : type || '未知交通方式';
+                if (option?.type === 'transportation') {
+                    const transportOptions = window.TRANSPORT_OPTIONS || [];
+                    const transportOption = transportOptions.find(opt => opt.value === option.item);
+                    return transportOption ? transportOption.label : option.item || '未知交通方式';
+                } else if (option?.type === 'food') {
+                    const dietOptions = window.DIET_OPTIONS || [];
+                    const foodOption = dietOptions.find(opt => opt.value === option.item);
+                    return foodOption ? foodOption.label : option.item || '未知食品';
+                }
+                return '未知选项';
             } catch (e) {
-                return type || '未知交通方式';
+                return option?.item || '未知选项';
             }
         };
         
@@ -811,8 +1136,8 @@ function displayComparisonResults(comparison) {
         const resultsSectionEl = document.getElementById('results-section');
         
         // 更新结果显示
-        if (option1NameEl) option1NameEl.textContent = getTransportLabel(comparison?.option1?.item);
-        if (option2NameEl) option2NameEl.textContent = getTransportLabel(comparison?.option2?.item);
+        if (option1NameEl) option1NameEl.textContent = getOptionLabel(comparison?.option1);
+        if (option2NameEl) option2NameEl.textContent = getOptionLabel(comparison?.option2);
         
         if (option1EmissionEl) option1EmissionEl.textContent = utils.formatCarbonEmission(comparison?.option1?.emission || 0);
         if (option2EmissionEl) option2EmissionEl.textContent = utils.formatCarbonEmission(comparison?.option2?.emission || 0);
@@ -852,7 +1177,11 @@ function displayComparisonResults(comparison) {
 // 更新碳减排建议 - 增强错误处理
 function updateCarbonReductionTips(comparison) {
     try {
-        const tipsContainer = document.getElementById('carbon-reduction-tips');
+        // 检查是否有正确的容器ID，如果没有carbon-reduction-tips，尝试使用reduction-tips
+        let tipsContainer = document.getElementById('carbon-reduction-tips');
+        if (!tipsContainer) {
+            tipsContainer = document.getElementById('reduction-tips');
+        }
         
         if (!tipsContainer) {
             console.warn('未找到碳减排建议容器');
@@ -860,57 +1189,100 @@ function updateCarbonReductionTips(comparison) {
         }
         
         if (!comparison) {
-            tipsContainer.innerHTML = '<div class="tip">暂无建议数据</div>';
+            tipsContainer.innerHTML = '<li class="tip">暂无建议数据</li>';
             return;
         }
         
-        // 获取交通方式标签
-        const getTransportLabel = (type) => {
+        // 获取选项标签（根据类型）
+        const getOptionLabel = (option) => {
             try {
-                const transportOptions = window.TRANSPORT_OPTIONS || [
-                    { value: 'car_small', label: '小型汽车' },
-                    { value: 'bus', label: '公交车' },
-                    { value: 'subway', label: '地铁' },
-                    { value: 'bike', label: '自行车' },
-                    { value: 'walk', label: '步行' }
-                ];
-                const option = transportOptions.find(opt => opt.value === type);
-                return option ? option.label : type || '未知交通方式';
+                if (option?.type === 'transportation') {
+                    const transportOptions = window.TRANSPORT_OPTIONS || [];
+                    const transportOption = transportOptions.find(opt => opt.value === option.item);
+                    return transportOption ? transportOption.label : option.item || '未知交通方式';
+                } else if (option?.type === 'food') {
+                    const dietOptions = window.DIET_OPTIONS || [];
+                    const foodOption = dietOptions.find(opt => opt.value === option.item);
+                    return foodOption ? foodOption.label : option.item || '未知食品';
+                }
+                return '未知选项';
             } catch (e) {
-                return type || '未知交通方式';
+                return option?.item || '未知选项';
             }
         };
         
         // 安全获取数据
-        const option1Item = comparison?.option1?.item || '未知交通方式1';
-        const option2Item = comparison?.option2?.item || '未知交通方式2';
+        const option1 = comparison?.option1;
+        const option2 = comparison?.option2;
         const savings = comparison?.savings || 0;
-        const option1Amount = comparison?.option1?.amount || 1;
         
-        // 简单的建议逻辑
+        // 简单的建议逻辑，根据类型生成不同的建议
         try {
-            if (comparison.lowerOption === 'option2') {
-                tipsContainer.innerHTML = `
-                    <div class="tip">
-                        <strong>环保建议：</strong>使用${getTransportLabel(option2Item)}相比${getTransportLabel(option1Item)}可以显著减少碳排放。
-                    </div>
-                    <div class="tip">
-                        每100公里可以减少约${(savings * 100 / Math.max(option1Amount, 1)).toFixed(2)}公斤的二氧化碳排放。
-                    </div>
-                `;
-            } else {
-                tipsContainer.innerHTML = `
-                    <div class="tip">
-                        <strong>环保建议：</strong>使用${getTransportLabel(option1Item)}相比${getTransportLabel(option2Item)}可以显著减少碳排放。
-                    </div>
-                    <div class="tip">
-                        每100公里可以减少约${(savings * 100 / Math.max(option1Amount, 1)).toFixed(2)}公斤的二氧化碳排放。
-                    </div>
-                `;
+            if (option1?.type === 'transportation' && option2?.type === 'transportation') {
+                // 交通方式建议
+                const option1Label = getOptionLabel(option1);
+                const option2Label = getOptionLabel(option2);
+                const amount = option1.amount || 1;
+                
+                if (comparison.lowerOption === 'option2') {
+                    tipsContainer.innerHTML = `
+                        <li>
+                            <strong>环保建议：</strong>使用${option2Label}相比${option1Label}可以显著减少碳排放。
+                        </li>
+                        <li>
+                            每100公里可以减少约${(savings * 100 / Math.max(amount, 1)).toFixed(2)}公斤的二氧化碳排放。
+                        </li>
+                        <li>
+                            建议优先选择公共交通、骑行或步行等低碳出行方式。
+                        </li>
+                    `;
+                } else {
+                    tipsContainer.innerHTML = `
+                        <li>
+                            <strong>环保建议：</strong>使用${option1Label}相比${option2Label}可以显著减少碳排放。
+                        </li>
+                        <li>
+                            每100公里可以减少约${(savings * 100 / Math.max(amount, 1)).toFixed(2)}公斤的二氧化碳排放。
+                        </li>
+                        <li>
+                            建议优先选择公共交通、骑行或步行等低碳出行方式。
+                        </li>
+                    `;
+                }
+            } else if (option1?.type === 'food' && option2?.type === 'food') {
+                // 食品建议
+                const option1Label = getOptionLabel(option1);
+                const option2Label = getOptionLabel(option2);
+                
+                if (comparison.lowerOption === 'option2') {
+                    tipsContainer.innerHTML = `
+                        <li>
+                            <strong>饮食建议：</strong>选择${option2Label}而非${option1Label}可以减少碳排放。
+                        </li>
+                        <li>
+                            每减少1公斤${option1Label}的消费，增加1公斤${option2Label}的消费，可以减少约${savings.toFixed(2)}公斤二氧化碳排放。
+                        </li>
+                        <li>
+                            考虑增加植物性食品在饮食中的比例，适当减少红肉消费，有助于降低饮食碳足迹。
+                        </li>
+                    `;
+                } else {
+                    tipsContainer.innerHTML = `
+                        <li>
+                            <strong>饮食建议：</strong>选择${option1Label}而非${option2Label}可以减少碳排放。
+                        </li>
+                        <li>
+                            每减少1公斤${option2Label}的消费，增加1公斤${option1Label}的消费，可以减少约${savings.toFixed(2)}公斤二氧化碳排放。
+                        </li>
+                        <li>
+                            考虑增加植物性食品在饮食中的比例，适当减少红肉消费，有助于降低饮食碳足迹。
+                        </li>
+                    `;
+                }
             }
         } catch (htmlError) {
             console.error('生成建议HTML出错:', htmlError);
-            tipsContainer.innerHTML = '<div class="tip">无法生成环保建议</div>';
+            tipsContainer.innerHTML = '<li>无法生成环保建议</li>';
         }
         
     } catch (error) {
@@ -954,7 +1326,7 @@ function handleSaveRecord() {
             userId: isAnonymous ? 'anonymous_' + Date.now() : (userInfo.name || 'unknown'),
             userName: isAnonymous ? '访客' : (userInfo.name || '未知用户'),
             studentId: isAnonymous ? 'guest' : (userInfo.studentId || ''),
-            activityType: 'transportation',
+            activityType: currentCalculation?.option1?.type || 'transportation',
             option1: {
                 type: currentCalculation?.option1?.type || 'transportation',
                 item: currentCalculation?.option1?.item || 'unknown',
@@ -1137,20 +1509,41 @@ function loadUserRecords() {
                     const row = document.createElement('tr');
                     
                     try {
-                        // 获取交通方式标签
-                        const getTransportLabel = (type) => {
-                            const option = (window.TRANSPORT_OPTIONS || []).find(opt => opt.value === type);
-                            return option ? option.label : type || '未知';
+                        // 获取选项标签（支持交通和食品类型）
+                        const getOptionLabel = (option) => {
+                            try {
+                                if (option?.type === 'transportation' || !option?.type) {
+                                    const transportOptions = window.TRANSPORT_OPTIONS || [];
+                                    const transportOption = transportOptions.find(opt => opt.value === option?.item);
+                                    return transportOption ? transportOption.label : option?.item || '未知';
+                                } else if (option?.type === 'food') {
+                                    const dietOptions = window.DIET_OPTIONS || [];
+                                    const foodOption = dietOptions.find(opt => opt.value === option?.item);
+                                    return foodOption ? foodOption.label : option?.item || '未知食品';
+                                }
+                                return option?.item || '未知';
+                            } catch (e) {
+                                return option?.item || '未知';
+                            }
+                        };
+                        
+                        // 获取活动类型标签
+                        const getActivityTypeLabel = (type) => {
+                            const typeLabels = {
+                                'transportation': '交通',
+                                'food': '饮食'
+                            };
+                            return typeLabels[type] || '其他';
                         };
                         
                         row.innerHTML = `
                             <td>${utils.formatDate(record.timestamp || new Date(), 'YYYY-MM-DD HH:mm')}</td>
                             <td>${record.studentId || '访客'}</td>
-                            <td>${getTransportLabel(record.option1?.item)}</td>
-                            <td>${getTransportLabel(record.option2?.item)}</td>
+                            <td>${getActivityTypeLabel(record.activityType)}</td>
+                            <td>${getOptionLabel(record.option1)}</td>
+                            <td>${getOptionLabel(record.option2)}</td>
                             <td>${utils.formatCarbonEmission(record.totalEmission || 0)}</td>
                             <td>${utils.formatCarbonEmission(record.savings || 0)}</td>
-                            <td>${record.notes || '-'}</td>
                         `;
                     } catch (rowError) {
                         console.error('处理记录行出错:', rowError);

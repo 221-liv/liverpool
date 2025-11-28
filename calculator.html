@@ -142,35 +142,88 @@
         <h2>碳足迹对比计算</h2>
         <p>通过对比不同的活动选择，了解您的碳减排潜力</p>
         
-        <div class="calculator-container">
-            <!-- 选项1 -->
-            <div class="calculator-card">
-                <h3>选项 1</h3>
-                <div class="form-group">
-                    <label for="transport-type-1">交通方式</label>
-                    <select id="transport-type-1" required>
-                        <!-- JavaScript 动态填充 -->
-                    </select>
+        <!-- 计算类型选择 -->
+        <div class="calculator-type-selector">
+            <button id="transport-tab" class="tab-button active">交通方式</button>
+            <button id="food-tab" class="tab-button">食品消费</button>
+        </div>
+        
+        <!-- 交通方式计算 -->
+        <div id="transport-section" class="calculator-section active">
+            <div class="calculator-container">
+                <!-- 选项1 -->
+                <div class="calculator-card">
+                    <h3>选项 1</h3>
+                    <div class="form-group">
+                        <label for="transport-type-1">交通方式</label>
+                        <select id="transport-type-1" required>
+                            <!-- JavaScript 动态填充 -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="distance-1">距离 (公里)</label>
+                        <input type="number" id="distance-1" min="0" step="0.1" value="10" required>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="distance-1">距离 (公里)</label>
-                    <input type="number" id="distance-1" min="0" step="0.1" value="10" required>
+                
+                <!-- 选项2 -->
+                <div class="calculator-card">
+                    <h3>选项 2</h3>
+                    <div class="form-group">
+                        <label for="transport-type-2">交通方式</label>
+                        <select id="transport-type-2" required>
+                            <!-- JavaScript 动态填充 -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="distance-2">距离 (公里)</label>
+                        <input type="number" id="distance-2" min="0" step="0.1" value="10" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 食品碳足迹计算 -->
+        <div id="food-section" class="calculator-section" style="display: none;">
+            <div class="calculator-container">
+                <!-- 选项1 -->
+                <div class="calculator-card">
+                    <h3>选项 1</h3>
+                    <div class="form-group">
+                        <label for="food-type-1">食品类别</label>
+                        <select id="food-type-1" required>
+                            <!-- JavaScript 动态填充 -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="food-amount-1">消费量 (千克)</label>
+                        <input type="number" id="food-amount-1" min="0" step="0.1" value="1" required>
+                    </div>
+                </div>
+                
+                <!-- 选项2 -->
+                <div class="calculator-card">
+                    <h3>选项 2</h3>
+                    <div class="form-group">
+                        <label for="food-type-2">食品类别</label>
+                        <select id="food-type-2" required>
+                            <!-- JavaScript 动态填充 -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="food-amount-2">消费量 (千克)</label>
+                        <input type="number" id="food-amount-2" min="0" step="0.1" value="1" required>
+                    </div>
                 </div>
             </div>
             
-            <!-- 选项2 -->
-            <div class="calculator-card">
-                <h3>选项 2</h3>
-                <div class="form-group">
-                    <label for="transport-type-2">交通方式</label>
-                    <select id="transport-type-2" required>
-                        <!-- JavaScript 动态填充 -->
-                    </select>
+            <!-- 牛肉碳足迹构成分析 -->
+            <div id="beef-breakdown" class="calculator-card" style="margin-top: 30px; display: none;">
+                <h3>牛肉碳足迹构成分析</h3>
+                <div class="breakdown-chart">
+                    <!-- JavaScript 动态填充 -->
                 </div>
-                <div class="form-group">
-                    <label for="distance-2">距离 (公里)</label>
-                    <input type="number" id="distance-2" min="0" step="0.1" value="10" required>
-                </div>
+                <p>注：不同食品的碳足迹构成差异很大，牛肉的高碳足迹主要来源于肠道发酵产生的甲烷气体。</p>
             </div>
         </div>
         
@@ -224,9 +277,23 @@
         <!-- 碳排放知识 -->
         <div class="calculator-card" style="margin-top: 30px;">
             <h3>碳排放知识</h3>
-            <p>碳足迹是指个人、组织或产品在其全生命周期中直接或间接产生的温室气体排放总量，通常以二氧化碳当量（CO₂e）表示。</p>
-            <p>不同交通方式的碳排放强度差异很大：步行和自行车的碳足迹为零，公共交通（如公交车、地铁）的碳足迹较低，而私家车和飞机的碳足迹较高。</p>
-            <p>通过选择更环保的出行方式，我们可以显著减少个人碳足迹，为减缓气候变化贡献力量。</p>
+            <div id="transport-knowledge">
+                <p>碳足迹是指个人、组织或产品在其全生命周期中直接或间接产生的温室气体排放总量，通常以二氧化碳当量（CO₂e）表示。</p>
+                <p>不同交通方式的碳排放强度差异很大：步行和自行车的碳足迹为零，公共交通（如公交车、地铁）的碳足迹较低，而私家车和飞机的碳足迹较高。</p>
+                <p>通过选择更环保的出行方式，我们可以显著减少个人碳足迹，为减缓气候变化贡献力量。</p>
+            </div>
+            <div id="food-knowledge" style="display: none;">
+                <p>食品生产是全球碳排放的重要来源之一，约占全球温室气体排放的四分之一。</p>
+                <p>食品碳足迹差异很大：植物性食品（如蔬菜、谷物）的碳足迹通常较低，而动物性食品（特别是红肉）的碳足迹较高。</p>
+                <p>减少肉类消费，增加植物性食品摄入，是降低饮食碳足迹的有效途径。</p>
+            </div>
+        </div>
+        
+        <!-- 数据来源说明 -->
+        <div class="calculator-card" style="margin-top: 30px;">
+            <h3>数据来源</h3>
+            <p>本计算器使用的食品碳足迹数据参考了联合国粮农组织（FAO）、世界资源研究所（WRI）等权威机构的研究成果。</p>
+            <p>注：实际碳足迹可能因生产方式、地域、运输距离等因素而有所差异。本工具提供的是估算值，旨在帮助用户了解不同选择的相对环境影响。</p>
         </div>
     </main>
 
