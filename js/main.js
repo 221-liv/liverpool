@@ -34,6 +34,75 @@ if (!window.DIET_OPTIONS) {
     window.DIET_OPTIONS = [];
 }
 
+// 创建降级计算器实现
+function createFallbackCalculator() {
+    return {
+        compareEmissions: function(option1, option2) {
+            const getEmissionFactor = function(type, item) {
+                const factors = {
+                    transportation: {
+                        walking: 0,
+                        cycling: 0,
+                        bus: 0.089,
+                        subway: 0.041,
+                        taxi: 0.159,
+                        car_small: 0.122,
+                        car_medium: 0.172,
+                        car_large: 0.221,
+                        motorcycle: 0.091,
+                        train: 0.035,
+                        plane_domestic: 0.255,
+                        plane_international: 0.195
+                    },
+                    diet: {
+                        beef: 27.0,
+                        pork: 12.0,
+                        chicken: 6.0,
+                        eggs: 4.8,
+                        milk: 3.0,
+                        rice: 3.0,
+                        wheat: 2.5,
+                        tomato: 1.75,
+                        lettuce: 0.75,
+                        broccoli: 2.8,
+                        carrot: 1.1,
+                        apple: 0.8,
+                        banana: 0.7,
+                        vegetables: 2.0,
+                        fruits: 1.1,
+                        grains: 2.7
+                    }
+                };
+                return factors[type] && factors[type][item] ? factors[type][item] : 0;
+            };
+
+            const emission1 = option1.amount * getEmissionFactor(option1.type, option1.item);
+            const emission2 = option2.amount * getEmissionFactor(option2.type, option2.item);
+
+            return {
+                option1: { ...option1, emission: emission1 },
+                option2: { ...option2, emission: emission2 },
+                difference: Math.abs(emission1 - emission2),
+                savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
+                lowerOption: emission1 < emission2 ? 'option1' : 'option2'
+            };
+        },
+        getCarbonReductionTips: function(carbonAmount) {
+            const tips = [];
+            if (carbonAmount > 10) {
+                tips.push('选择更环保的选项可以显著减少碳排放');
+                tips.push('考虑使用公共交通或植物性食品');
+            } else {
+                tips.push('您的选择已经很环保，继续保持！');
+            }
+            return tips;
+        },
+        calculateEquivalentTrees: function(carbonAmount) {
+            return carbonAmount / 21.77; // 一棵树一年吸收约21.77公斤CO2
+        }
+    };
+}
+
 // 确保工具函数存在
 if (!window.utils) {
     window.utils = {
@@ -273,17 +342,15 @@ Calculator.prototype.handleCalculate = function() {
         }
     });
     
-    const calculator = window.carbonCalculator || createFallbackCalculator();
-
     try {
         let option1, option2;
 
         if (this.currentTab === 'transport') {
             // 获取交通方式计算数据
-            const transportType1 = document.getElementById('transport-type-1').value;
-            const distance1 = parseFloat(document.getElementById('distance-1').value) || 0;
-            const transportType2 = document.getElementById('transport-type-2').value;
-            const distance2 = parseFloat(document.getElementById('distance-2').value) || 0;
+            const transportType1 = document.getElementById('transport-type-1')?.value;
+            const distance1 = parseFloat(document.getElementById('distance-1')?.value) || 0;
+            const transportType2 = document.getElementById('transport-type-2')?.value;
+            const distance2 = parseFloat(document.getElementById('distance-2')?.value) || 0;
 
             option1 = {
                 type: 'transportation',
@@ -298,10 +365,10 @@ Calculator.prototype.handleCalculate = function() {
             };
         } else {
             // 获取食品消费计算数据
-            const foodType1 = document.getElementById('food-type-1').value;
-            const foodAmount1 = parseFloat(document.getElementById('food-amount-1').value) || 0;
-            const foodType2 = document.getElementById('food-type-2').value;
-            const foodAmount2 = parseFloat(document.getElementById('food-amount-2').value) || 0;
+            const foodType1 = document.getElementById('food-type-1')?.value;
+            const foodAmount1 = parseFloat(document.getElementById('food-amount-1')?.value) || 0;
+            const foodType2 = document.getElementById('food-type-2')?.value;
+            const foodAmount2 = parseFloat(document.getElementById('food-amount-2')?.value) || 0;
 
             option1 = {
                 type: 'diet',
@@ -316,15 +383,37 @@ Calculator.prototype.handleCalculate = function() {
             };
         }
 
-        // 计算碳足迹并比较
-        const comparisonResult = calculator.compareEmissions(option1, option2);
+        // 尝试使用主要计算方法，失败则使用降级方案
+        let comparisonResult;
+        try {
+            const calculator = window.carbonCalculator || createFallbackCalculator();
+            comparisonResult = calculator.compareEmissions(option1, option2);
+        } catch (calcError) {
+            console.warn('主要计算方法失败，使用降级方案:', calcError);
+            // 使用全局的降级计算器实现
+            comparisonResult = createFallbackCalculator().compareEmissions(option1, option2);
+        }
         
         // 显示结果
         this.displayComparisonResults(comparisonResult);
 
     } catch (error) {
         console.error('计算过程中出错:', error);
-        alert('计算过程中出现错误，请检查输入后重试。');
+        // 使用降级计算函数作为最后的备用方案
+        try {
+            const resultsSection = document.getElementById('results-section');
+            if (resultsSection) {
+                resultsSection.style.display = 'block';
+                resultsSection.innerHTML = `
+                    <div class="fallback-message">
+                        <h3>降级模式已启用</h3>
+                        <p>计算器正在使用备用功能，请刷新页面或检查您的网络连接。</p>
+                    </div>
+                `;
+            }
+        } catch (fallbackError) {
+            alert('计算过程中出现错误，请稍后重试。');
+        }
     }
 };
 
@@ -504,17 +593,27 @@ function initializePage() {
         
         console.log(`正在初始化页面: ${pageName}`);
         
+        // 确保常量已定义
+        ensureConstantsDefined();
+        
         // 根据页面类型执行相应的初始化
         switch (pageName) {
             case 'calculator':
-                // 确保Calculator类存在
-                if (window.Calculator) {
-                    const app = new window.Calculator();
-                    app.init();
-                } else {
-                    // 创建临时的Calculator实例
-                    const app = new Calculator();
-                    app.init();
+                // 计算器页面特殊处理 - 确保不强制登录
+                console.log('计算器页面初始化 - 不强制登录');
+                try {
+                    // 尝试正常初始化计算器
+                    if (window.Calculator) {
+                        const app = new window.Calculator();
+                        app.init();
+                    } else {
+                        // 创建临时的Calculator实例
+                        const app = new Calculator();
+                        app.init();
+                    }
+                } catch (calcError) {
+                    console.error('计算器初始化失败，使用降级方案:', calcError);
+                    initFallbackCalculator();
                 }
                 break;
             // 可以添加其他页面的初始化逻辑
@@ -534,6 +633,172 @@ function initializePage() {
         console.log('页面初始化完成');
     } catch (error) {
         console.error('页面初始化失败:', error);
+        
+        // 尝试降级方案
+        try {
+            // 获取页面名称用于判断
+            const pathname = window.location.pathname;
+            let pageName = pathname.split('/').pop();
+            if (!pageName.includes('.')) {
+                pageName = pageName;
+            } else {
+                pageName = pageName.split('.')[0];
+            }
+            
+            if (pageName === 'calculator') {
+                console.log('尝试使用降级方案初始化计算器');
+                initFallbackCalculator();
+            }
+        } catch (fallbackError) {
+            console.error('降级方案执行失败:', fallbackError);
+        }
+    }
+}
+
+// 初始化降级计算器
+function initFallbackCalculator() {
+    const fallbackCalc = createFallbackCalculator();
+    
+    // 为计算按钮添加事件监听
+    const calculateBtn = document.getElementById('calculate-btn');
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', function() {
+            try {
+                // 获取当前标签页
+                const currentTab = document.getElementById('transport-tab')?.classList.contains('active') ? 'transport' : 'food';
+                const isTransport = currentTab === 'transport';
+                
+                // 获取用户输入
+                const option1Type = isTransport ? 'transportation' : 'diet';
+                const option2Type = option1Type;
+                
+                const option1Item = document.getElementById(isTransport ? 'transport-type-1' : 'food-type-1')?.value;
+                const option2Item = document.getElementById(isTransport ? 'transport-type-2' : 'food-type-2')?.value;
+                const option1Amount = parseFloat(document.getElementById(isTransport ? 'distance-1' : 'food-amount-1')?.value) || 0;
+                const option2Amount = parseFloat(document.getElementById(isTransport ? 'distance-2' : 'food-amount-2')?.value) || 0;
+                
+                // 创建选项对象
+                const option1 = { type: option1Type, item: option1Item, amount: option1Amount };
+                const option2 = { type: option2Type, item: option2Item, amount: option2Amount };
+                
+                // 计算结果
+                const result = fallbackCalc.compareEmissions(option1, option2);
+                
+                // 显示结果
+                const resultsSection = document.getElementById('results-section');
+                if (resultsSection) {
+                    resultsSection.style.display = 'block';
+                    
+                    // 更新结果显示
+                    if (document.getElementById('option1-name')) {
+                        document.getElementById('option1-name').textContent = option1Item;
+                    }
+                    if (document.getElementById('option2-name')) {
+                        document.getElementById('option2-name').textContent = option2Item;
+                    }
+                    
+                    // 格式化碳排放量显示
+                    const formatEmission = (amount) => {
+                        return window.utils?.formatCarbonEmission(amount) || (amount.toFixed(2) + ' kg');
+                    };
+                    
+                    if (document.getElementById('option1-emission')) {
+                        document.getElementById('option1-emission').textContent = formatEmission(result.option1.emission);
+                    }
+                    if (document.getElementById('option2-emission')) {
+                        document.getElementById('option2-emission').textContent = formatEmission(result.option2.emission);
+                    }
+                    if (document.getElementById('carbon-saved')) {
+                        document.getElementById('carbon-saved').textContent = formatEmission(result.savings);
+                    }
+                    
+                    // 计算相当于种植多少棵树
+                    const treesSaved = fallbackCalc.calculateEquivalentTrees(result.savings);
+                    if (document.getElementById('trees-saved')) {
+                        document.getElementById('trees-saved').textContent = treesSaved.toFixed(2);
+                    }
+                }
+            } catch (e) {
+                console.error('计算失败:', e);
+                alert('计算过程中发生错误，请重试。');
+            }
+        });
+    }
+}
+
+// 确保常量已定义
+function ensureConstantsDefined() {
+    // 确保EMISSION_FACTORS已定义
+    if (!window.EMISSION_FACTORS) {
+        window.EMISSION_FACTORS = {
+            transportation: {
+                walking: 0,
+                cycling: 0,
+                bus: 0.089,
+                subway: 0.041,
+                taxi: 0.159,
+                car_small: 0.122,
+                car_medium: 0.172,
+                car_large: 0.221,
+                motorcycle: 0.091,
+                train: 0.035,
+                plane_domestic: 0.255,
+                plane_international: 0.195
+            },
+            diet: {
+                beef: 27.0,
+                pork: 12.0,
+                chicken: 6.0,
+                eggs: 4.8,
+                milk: 3.0,
+                rice: 3.0,
+                wheat: 2.5,
+                vegetables: 2.0,
+                fruits: 1.1,
+                grains: 2.7
+            }
+        };
+    }
+    
+    // 确保TRANSPORT_OPTIONS已定义
+    if (!window.TRANSPORT_OPTIONS) {
+        window.TRANSPORT_OPTIONS = [
+            { value: 'walking', label: '步行', unit: 'km' },
+            { value: 'cycling', label: '自行车', unit: 'km' },
+            { value: 'bus', label: '公共汽车', unit: 'km' },
+            { value: 'subway', label: '地铁', unit: 'km' },
+            { value: 'taxi', label: '出租车', unit: 'km' },
+            { value: 'car_small', label: '小型汽车', unit: 'km' },
+            { value: 'car_medium', label: '中型汽车', unit: 'km' },
+            { value: 'car_large', label: '大型汽车', unit: 'km' },
+            { value: 'motorcycle', label: '摩托车', unit: 'km' },
+            { value: 'train', label: '火车', unit: 'km' },
+            { value: 'plane_domestic', label: '国内航班', unit: 'km' },
+            { value: 'plane_international', label: '国际航班', unit: 'km' }
+        ];
+    }
+    
+    // 确保DIET_OPTIONS已定义
+    if (!window.DIET_OPTIONS) {
+        window.DIET_OPTIONS = [
+            { value: 'beef', label: '牛肉', unit: 'kg', category: 'meat', highImpact: true },
+            { value: 'pork', label: '猪肉', unit: 'kg', category: 'meat' },
+            { value: 'chicken', label: '鸡肉', unit: 'kg', category: 'meat' },
+            { value: 'vegetables', label: '蔬菜', unit: 'kg', category: 'vegetable' },
+            { value: 'fruits', label: '水果', unit: 'kg', category: 'fruit' },
+            { value: 'grains', label: '谷物', unit: 'kg', category: 'grain' }
+        ];
+    }
+    
+    // 确保STORAGE_KEYS已定义
+    if (!window.STORAGE_KEYS) {
+        window.STORAGE_KEYS = {
+            USER_RECORDS: 'carbon_footprint_records',
+            USER_INFO: 'user_info',
+            CLASS_RANKING: 'class_carbon_ranking',
+            ADMIN_LOGGED_IN: 'admin_logged_in',
+            USER_LOGGED_IN: 'user_logged_in'
+        };
     }
 }
 
