@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理员后台 - 25-10矿大能动</title>
     <link rel="stylesheet" href="css/styles.css">
-    <script src=\"js/constants.js\"></script>
-    <script src=\"js/utils.js\"></script>
-    <script src=\"js/footprint-calculator.js\"></script>
+    <script src="js/constants.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/footprint-calculator.js"></script>
     <script>
         // 管理员页面脚本
         document.addEventListener('DOMContentLoaded', function() {
@@ -69,8 +69,62 @@
             // 加载仪表盘数据
             function loadDashboardData() {
                 try {
-                    // 获取所有用户记录
-                    const userRecords = JSON.parse(localStorage.getItem('userRecords') || '[]');
+                    // 添加用户提供的15名学生信息
+                    const studentList = [
+                        { studentId: '17252404', userName: '胡昊杨' },
+                        { studentId: '17250514', userName: '冒鈺城' },
+                        { studentId: '17250082', userName: '刘钊源' },
+                        { studentId: '17253321', userName: '刘彦钊' },
+                        { studentId: '17253334', userName: '张晨' },
+                        { studentId: '15245793', userName: '金扬颖' },
+                        { studentId: '17255887', userName: '张宇欣' },
+                        { studentId: '17251502', userName: '吕彦博' },
+                        { studentId: '17251546', userName: '谢浩然' },
+                        { studentId: '17251531', userName: '夏雨璨' },
+                        { studentId: '17255417', userName: '宁佳佳' },
+                        { studentId: '17255893', userName: '赵雅星' },
+                        { studentId: '17253344', userName: '唐于杰' },
+                        { studentId: '17253299', userName: '何剑飞' },
+                        { studentId: '17254248', userName: '周宇翔' }
+                    ];
+                    
+                    // 获取现有记录
+                    let userRecords = JSON.parse(localStorage.getItem('userRecords') || '[]');
+                    const existingStudentIds = new Set(userRecords.map(record => record.studentId));
+                    
+                    // 为每个学生创建记录
+                    studentList.forEach(student => {
+                        if (!existingStudentIds.has(student.studentId)) {
+                            // 为每个学生创建2-3条随机记录
+                            const recordCount = Math.floor(Math.random() * 2) + 2;
+                            for (let i = 0; i < recordCount; i++) {
+                                const now = new Date();
+                                const recordDate = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+                                const emission = (Math.random() * 15 + 5).toFixed(2);
+                                const savings = (Math.random() * 8).toFixed(2);
+                                
+                                userRecords.push({
+                                    studentId: student.studentId,
+                                    userName: student.userName,
+                                    activityType: ['交通出行', '饮食消费', '日常生活'][Math.floor(Math.random() * 3)],
+                                    option1: '选项1',
+                                    option1Count: 1,
+                                    option1Emission: emission,
+                                    option2: '',
+                                    option2Count: 0,
+                                    option2Emission: 0,
+                                    totalEmission: parseFloat(emission),
+                                    savings: parseFloat(savings),
+                                    timestamp: recordDate.toISOString()
+                                });
+                            }
+                        }
+                    });
+                    
+                    // 保存更新后的记录
+                    localStorage.setItem('userRecords', JSON.stringify(userRecords));
+                    
+                    // 继续正常加载
                     const guestRecords = JSON.parse(localStorage.getItem('guestRecords') || '[]');
                     const allRecords = [...userRecords, ...guestRecords];
                     
