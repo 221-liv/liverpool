@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>碳足迹计算 - 25-10矿大能动</title>
+    <title>碳足迹计算器 - 修复版</title>
     <link rel="stylesheet" href="css/styles.css">
     <style>
         .results-section {
@@ -74,6 +74,15 @@
         }
         .reduction-tips li {
             margin-bottom: 10px;
+        }
+        .debug-info {
+            background: #e7f3ff;
+            border: 1px solid #2196F3;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -224,7 +233,7 @@
         
         <!-- 计算按钮 -->
         <div class="calculator-actions">
-            <button id="calculate-btn" class="primary-button">开始计算</button>
+            <button id="calculate-btn" class="primary-button">🧮 开始计算</button>
         </div>
         
         <!-- 结果展示区域 -->
@@ -262,6 +271,12 @@
                     <li>选择低碳选项，保护地球环境</li>
                 </ul>
             </div>
+            
+            <!-- 调试信息 -->
+            <div class="debug-info" id="debug-info" style="display: none;">
+                <strong>调试信息:</strong>
+                <div id="debug-content"></div>
+            </div>
         </div>
     </main>
 
@@ -272,7 +287,7 @@
     </footer>
 
     <script>
-        // ===== 内联完整的计算器代码，确保功能正常 =====
+        // ===== 内联所有必要的代码，确保功能正常 =====
         
         console.log('========== 页面脚本开始执行 ==========');
         
@@ -387,7 +402,7 @@
             // 绑定计算按钮
             const calculateBtn = document.getElementById('calculate-btn');
             if (calculateBtn) {
-                console.log('✅ 找到计算按钮，绑定点击事件');
+                console.log('找到计算按钮，绑定点击事件');
                 calculateBtn.addEventListener('click', function() {
                     console.log('========== 计算按钮被点击 ==========');
                     console.log('当前标签:', currentTab);
@@ -397,12 +412,14 @@
                 console.error('❌ 未找到计算按钮！');
             }
             
-            console.log('✅ 初始化完成');
+            console.log('初始化完成');
         });
         
         // 计算函数
         function handleCalculate() {
             console.log('开始计算，当前标签:', currentTab);
+            
+            const debugInfo = [];
             
             try {
                 let type, item1, amount1, item2, amount2;
@@ -414,6 +431,10 @@
                     amount1 = parseFloat(document.getElementById('distance-1').value) || 0;
                     item2 = document.getElementById('transport-type-2').value;
                     amount2 = parseFloat(document.getElementById('distance-2').value) || 0;
+                    
+                    debugInfo.push(`类型: 交通方式`);
+                    debugInfo.push(`选项1: ${item1}, 距离: ${amount1}km`);
+                    debugInfo.push(`选项2: ${item2}, 距离: ${amount2}km`);
                 } else {
                     console.log('处理食品消费计算');
                     type = 'diet';
@@ -421,14 +442,21 @@
                     amount1 = parseFloat(document.getElementById('food-amount-1').value) || 0;
                     item2 = document.getElementById('food-type-2').value;
                     amount2 = parseFloat(document.getElementById('food-amount-2').value) || 0;
+                    
+                    debugInfo.push(`类型: 食品消费`);
+                    debugInfo.push(`选项1: ${item1}, 消费量: ${amount1}kg`);
+                    debugInfo.push(`选项2: ${item2}, 消费量: ${amount2}kg`);
                 }
                 
                 // 获取排放因子
                 const factor1 = EMISSION_FACTORS[type][item1];
                 const factor2 = EMISSION_FACTORS[type][item2];
                 
-                console.log(`${item1} 排放因子:`, factor1);
-                console.log(`${item2} 排放因子:`, factor2);
+                console.log('排放因子1:', factor1);
+                console.log('排放因子2:', factor2);
+                
+                debugInfo.push(`排放因子1: ${factor1} kg CO₂e/${currentTab === 'transport' ? 'km' : 'kg'}`);
+                debugInfo.push(`排放因子2: ${factor2} kg CO₂e/${currentTab === 'transport' ? 'km' : 'kg'}`);
                 
                 // 计算排放量
                 const emission1 = amount1 * factor1;
@@ -437,12 +465,18 @@
                 console.log('排放量1:', emission1);
                 console.log('排放量2:', emission2);
                 
+                debugInfo.push(`排放量1: ${emission1.toFixed(3)} kg CO₂e`);
+                debugInfo.push(`排放量2: ${emission2.toFixed(3)} kg CO₂e`);
+                
                 // 计算减排量
                 const savings = Math.abs(emission1 - emission2);
                 const trees = (savings / 21.77).toFixed(2);
                 
                 console.log('减排量:', savings);
                 console.log('相当于树木:', trees);
+                
+                debugInfo.push(`减排量: ${savings.toFixed(3)} kg CO₂e`);
+                debugInfo.push(`相当于种植: ${trees} 棵树`);
                 
                 // 显示结果
                 document.getElementById('option1-name').textContent = LABELS[type][item1];
@@ -481,6 +515,9 @@
                 // 显示结果区域
                 document.getElementById('results-section').style.display = 'block';
                 
+                // 显示调试信息
+                document.getElementById('debug-content').innerHTML = debugInfo.join('<br>');
+                
                 // 滚动到结果
                 document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 
@@ -489,7 +526,18 @@
             } catch (error) {
                 console.error('❌ 计算过程中出错:', error);
                 console.error('错误堆栈:', error.stack);
-                alert('计算出错: ' + error.message + '\n请刷新页面重试');
+                alert('计算出错: ' + error.message);
+                
+                // 显示错误信息
+                document.getElementById('results-section').style.display = 'block';
+                document.getElementById('results-section').innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 8px;">
+                        <h3>❌ 计算错误</h3>
+                        <p><strong>错误信息:</strong> ${error.message}</p>
+                        <p><strong>错误位置:</strong> ${error.stack}</p>
+                        <p>请刷新页面重试，或联系技术支持。</p>
+                    </div>
+                `;
             }
         }
         
