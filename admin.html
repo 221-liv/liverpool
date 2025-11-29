@@ -175,28 +175,55 @@
                         return;
                     }
                     
+                    // 辅助函数：转义CSV字段（处理逗号、引号、换行符）
+                    function escapeCSV(value) {
+                        if (value === null || value === undefined) return '';
+                        const str = String(value);
+                        // 如果包含逗号、引号或换行符，需要用双引号包裹，并将引号转义
+                        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                            return '"' + str.replace(/"/g, '""') + '"';
+                        }
+                        return str;
+                    }
+                    
                     // CSV表头
-                    let csv = '时间,学号,姓名,活动类型,选项1,选项1数量,选项1排放,选项2,选项2数量,选项2排放,总排放,节约量\\n';
+                    let csv = '时间,学号,姓名,活动类型,选项1,选项1数量,选项1排放(kg),选项2,选项2数量,选项2排放(kg),总排放(kg),节约量(kg)\n';
                     
                     // CSV数据
                     allRecords.forEach(record => {
-                        const date = new Date(record.timestamp).toLocaleString('zh-CN');
-                        csv += `${date},`;
-                        csv += `${record.studentId || '访客'},`;
-                        csv += `${record.userName || '访客'},`;
-                        csv += `${record.activityType === 'transportation' ? '交通' : '食品'},`;
-                        csv += `${record.option1Label},`;
-                        csv += `${record.option1Amount},`;
-                        csv += `${record.option1Emission.toFixed(3)},`;
-                        csv += `${record.option2Label},`;
-                        csv += `${record.option2Amount},`;
-                        csv += `${record.option2Emission.toFixed(3)},`;
-                        csv += `${record.totalEmission.toFixed(3)},`;
-                        csv += `${record.savings.toFixed(3)}\\n`;
+                        const date = new Date(record.timestamp).toLocaleString('zh-CN', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        });
+                        
+                        const row = [
+                            escapeCSV(date),
+                            escapeCSV(record.studentId || '访客'),
+                            escapeCSV(record.userName || '访客'),
+                            escapeCSV(record.activityType === 'transportation' ? '交通' : '食品'),
+                            escapeCSV(record.option1Label || ''),
+                            escapeCSV(record.option1Amount || 0),
+                            escapeCSV(record.option1Emission ? record.option1Emission.toFixed(3) : '0.000'),
+                            escapeCSV(record.option2Label || ''),
+                            escapeCSV(record.option2Amount || 0),
+                            escapeCSV(record.option2Emission ? record.option2Emission.toFixed(3) : '0.000'),
+                            escapeCSV(record.totalEmission ? record.totalEmission.toFixed(3) : '0.000'),
+                            escapeCSV(record.savings ? record.savings.toFixed(3) : '0.000')
+                        ];
+                        
+                        csv += row.join(',') + '\n';
                     });
                     
+                    // 添加UTF-8 BOM头，确保Excel正确识别中文
+                    const BOM = '\uFEFF';
+                    const csvContent = BOM + csv;
+                    
                     // 下载CSV文件
-                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const link = document.createElement('a');
                     const url = URL.createObjectURL(blob);
                     link.setAttribute('href', url);
