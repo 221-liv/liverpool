@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>碳足迹计算 - 25-10矿大能动</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="js/auth.js"></script>
     <style>
         .results-section {
             background: #f8f9fa;
@@ -539,8 +540,18 @@
         // 保存记录到本地存储
         function saveRecord(record) {
             try {
-                // 检查是否登录
-                const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null');
+                // 使用统一的RecordManager保存记录
+                if (window.RecordManager) {
+                    const success = window.RecordManager.saveRecord(record);
+                    if (success) {
+                        console.log('✅ 记录保存成功（通过RecordManager）');
+                        return true;
+                    }
+                }
+                
+                // 降级方案：直接使用localStorage
+                const userInfo = window.AuthManager ? window.AuthManager.getCurrentUser() : 
+                                JSON.parse(localStorage.getItem('userInfo') || 'null');
                 
                 if (userInfo) {
                     // 登录用户：保存到用户记录
@@ -568,14 +579,15 @@
         
         // 显示保存成功通知
         function showSaveNotification() {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null');
+            const userInfo = window.AuthManager ? window.AuthManager.getCurrentUser() : 
+                            JSON.parse(localStorage.getItem('userInfo') || 'null');
             const notification = document.createElement('div');
             notification.style.cssText = 'position:fixed;top:80px;right:20px;background:#4caf50;color:white;padding:15px 25px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:10000;font-size:14px;animation:slideIn 0.3s ease;';
             
             if (userInfo) {
-                notification.innerHTML = '✅ 记录已保存！可在<a href="records.html" style="color:white;text-decoration:underline;font-weight:bold;">个人记录</a>页面查看';
+                notification.innerHTML = `✅ 记录已保存！<strong>${userInfo.name}</strong><br>可在<a href="records.html" style="color:white;text-decoration:underline;font-weight:bold;">个人记录</a>页面查看`;
             } else {
-                notification.innerHTML = '✅ 记录已保存（访客模式）！可在<a href="records.html" style="color:white;text-decoration:underline;font-weight:bold;">个人记录</a>页面查看';
+                notification.innerHTML = '✅ 记录已保存（访客模式）！<br>可在<a href="records.html" style="color:white;text-decoration:underline;font-weight:bold;">个人记录</a>页面查看<br><small><a href="login.html" style="color:#ffeb3b;text-decoration:underline;">登录</a>后记录将绑定到您的账户</small>';
             }
             
             document.body.appendChild(notification);
@@ -583,7 +595,7 @@
             setTimeout(() => {
                 notification.style.animation = 'slideOut 0.3s ease';
                 setTimeout(() => notification.remove(), 300);
-            }, 4000);
+            }, 5000);
         }
         
         console.log('========== 页面脚本加载完成 ==========');

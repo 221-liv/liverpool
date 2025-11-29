@@ -5,69 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人记录 - 25-10矿大能动</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="js/auth.js"></script>
     <script src="js/constants.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/footprint-calculator.js"></script>
     <script src="js/main.js" defer></script>
     <script>
-        // 个人记录页面 - 访客模式（无需登录）
+        // 个人记录页面 - 使用统一的AuthManager和RecordManager
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('个人记录页面初始化（访客模式）');
+            console.log('个人记录页面初始化');
             
-            // 检查本地存储中是否有STORAGE_KEYS对象
-            if (!window.STORAGE_KEYS) {
-                window.STORAGE_KEYS = {
-                    USER_INFO: 'userInfo',
-                    USER_RECORDS: 'userRecords',
-                    GUEST_RECORDS: 'guestRecords',  // 访客记录
-                    CLASS_RANKING: 'classRanking'
-                };
-            }
-            
-            // 检查用户是否已登录
-            let userInfo = null;
-            try {
-                const storedInfo = localStorage.getItem(STORAGE_KEYS.USER_INFO);
-                if (storedInfo) {
-                    userInfo = JSON.parse(storedInfo);
-                }
-            } catch (error) {
-                console.error('获取用户信息失败:', error);
-            }
+            // 获取当前用户信息
+            const userInfo = window.AuthManager ? window.AuthManager.getCurrentUser() : null;
             
             // 更新页面标题和提示
             const pageTitle = document.querySelector('main h2');
             if (userInfo) {
                 pageTitle.textContent = `${userInfo.name}的碳足迹记录`;
+                console.log('✅ 用户模式:', userInfo.name);
             } else {
                 pageTitle.textContent = '个人碳足迹记录（访客模式）';
+                console.log('ℹ️ 访客模式');
+                
                 // 添加登录提示
                 const loginTip = document.createElement('div');
                 loginTip.className = 'info-message';
-                loginTip.style.cssText = 'background:#e3f2fd;padding:15px;border-radius:8px;margin-bottom:20px;color:#1976d2;';
-                loginTip.innerHTML = '<strong>提示：</strong>您当前使用访客模式，记录仅保存在本地浏览器中。<a href="login.html" style="color:#1976d2;text-decoration:underline;">点击登录</a>后可将记录绑定到您的账户。';
+                loginTip.style.cssText = 'background:#e3f2fd;padding:15px;border-radius:8px;margin-bottom:20px;color:#1976d2;border-left:4px solid #1976d2;';
+                loginTip.innerHTML = '<strong>💡 提示：</strong>您当前使用访客模式，记录仅保存在本地浏览器中。<a href="login.html" style="color:#1976d2;text-decoration:underline;font-weight:bold;margin-left:8px;">点击登录</a>后可将记录绑定到您的账户，实现跨设备同步。';
                 pageTitle.after(loginTip);
-            }
-            
-            // 更新导航栏
-            const registerLink = document.getElementById('register-link');
-            const logoutButton = document.getElementById('logout-button');
-            
-            if (userInfo) {
-                // 已登录状态
-                if (registerLink) registerLink.style.display = 'none';
-                if (logoutButton) logoutButton.style.display = 'block';
-                
-                // 添加退出登录事件
-                if (logoutButton) {
-                    logoutButton.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        if (confirm('退出登录后将切换为访客模式，确定要退出吗？')) {
-                            localStorage.removeItem(STORAGE_KEYS.USER_INFO);
-                            location.reload();
-                        }
-                    });
-                }
             }
             
             // 加载记录数据
@@ -79,26 +44,25 @@
             let records = [];
             
             try {
-                if (userInfo) {
-                    // 登录用户：加载用户记录
-                    const userRecords = localStorage.getItem(STORAGE_KEYS.USER_RECORDS);
-                    if (userRecords) {
-                        const allRecords = JSON.parse(userRecords);
-                        records = allRecords.filter(r => r.studentId === userInfo.studentId);
-                    }
+                // 使用RecordManager获取记录
+                if (window.RecordManager) {
+                    records = window.RecordManager.getCurrentUserRecords();
+                    console.log('✅ 通过RecordManager加载记录，数量:', records.length);
                 } else {
-                    // 访客模式：加载访客记录
-                    const guestRecords = localStorage.getItem(STORAGE_KEYS.GUEST_RECORDS);
-                    if (guestRecords) {
-                        records = JSON.parse(guestRecords);
+                    // 降级方案
+                    if (userInfo) {
+                        const userRecords = JSON.parse(localStorage.getItem('userRecords') || '[]');
+                        records = userRecords.filter(r => r.studentId === userInfo.studentId);
+                    } else {
+                        records = JSON.parse(localStorage.getItem('guestRecords') || '[]');
                     }
+                    console.log('ℹ️ 通过localStorage加载记录（降级），数量:', records.length);
                 }
                 
-                console.log('加载到的记录数:', records.length);
                 displayRecords(records);
                 updateStats(records);
             } catch (error) {
-                console.error('加载记录失败:', error);
+                console.error('❌ 加载记录失败:', error);
             }
         }
         

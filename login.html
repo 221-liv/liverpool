@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>登录 - 碳足迹计算器</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="js/auth.js"></script>
     <style>
         .login-container {
             display: flex;
@@ -118,15 +119,6 @@
     <script src="js/utils.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 检查本地存储中是否有STORAGE_KEYS对象
-            if (!window.STORAGE_KEYS) {
-                window.STORAGE_KEYS = {
-                    USER_INFO: 'userInfo',
-                    USER_RECORDS: 'userRecords',
-                    CLASS_RANKING: 'classRanking'
-                };
-            }
-
             const loginForm = document.getElementById('login-form');
             const errorMessage = document.getElementById('error-message');
 
@@ -142,25 +134,30 @@
                     return;
                 }
                 
-                // 保存用户信息到本地存储
+                // 创建用户信息对象
                 const userInfo = {
                     name: name,
                     studentId: studentId,
                     lastLogin: new Date().toISOString()
                 };
                 
-                // 尝试使用utils.storage保存，如果不可用则使用localStorage
-                try {
-                    if (utils && utils.storage && typeof utils.storage.set === 'function') {
-                        utils.storage.set(STORAGE_KEYS.USER_INFO, userInfo);
-                    } else {
-                        localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(userInfo));
+                // 使用AuthManager保存登录信息
+                if (window.AuthManager) {
+                    const success = window.AuthManager.login(userInfo);
+                    if (success) {
+                        console.log('✅ 登录成功，跳转到首页');
+                        window.location.href = 'index.html';
+                        return;
                     }
-                    
-                    // 登录成功，跳转到首页
+                }
+                
+                // 降级方案：直接使用localStorage
+                try {
+                    localStorage.setItem('userInfo', JSON.stringify(userInfo));
+                    console.log('✅ 登录成功（降级方案），跳转到首页');
                     window.location.href = 'index.html';
                 } catch (error) {
-                    console.error('保存用户信息失败:', error);
+                    console.error('❌ 保存用户信息失败:', error);
                     showError('登录失败，请重试');
                 }
             });
