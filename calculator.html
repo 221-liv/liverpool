@@ -75,6 +75,28 @@
         .reduction-tips li {
             margin-bottom: 10px;
         }
+        
+        /* 通知动画 */
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -479,7 +501,7 @@
                 tipsList.innerHTML = tips.map(tip => `<li>${tip}</li>`).join('');
                 
                 // 保存记录
-                saveRecord({
+                const recordSaved = saveRecord({
                     activityType: type,
                     option1: item1,
                     option1Label: LABELS[type][item1],
@@ -496,6 +518,11 @@
                 
                 // 显示结果区域
                 document.getElementById('results-section').style.display = 'block';
+                
+                // 显示保存成功提示
+                if (recordSaved) {
+                    showSaveNotification();
+                }
                 
                 // 滚动到结果
                 document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -523,17 +550,40 @@
                     const userRecords = JSON.parse(localStorage.getItem('userRecords') || '[]');
                     userRecords.push(record);
                     localStorage.setItem('userRecords', JSON.stringify(userRecords));
-                    console.log('✅ 记录已保存到用户记录');
+                    console.log('✅ 记录已保存到用户记录:', userInfo.name);
+                    return true;
                 } else {
                     // 访客模式：保存到访客记录
                     const guestRecords = JSON.parse(localStorage.getItem('guestRecords') || '[]');
                     guestRecords.push(record);
                     localStorage.setItem('guestRecords', JSON.stringify(guestRecords));
                     console.log('✅ 记录已保存到访客记录');
+                    return true;
                 }
             } catch (error) {
                 console.error('❌ 保存记录失败:', error);
+                return false;
             }
+        }
+        
+        // 显示保存成功通知
+        function showSaveNotification() {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null');
+            const notification = document.createElement('div');
+            notification.style.cssText = 'position:fixed;top:80px;right:20px;background:#4caf50;color:white;padding:15px 25px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:10000;font-size:14px;animation:slideIn 0.3s ease;';
+            
+            if (userInfo) {
+                notification.innerHTML = '✅ 记录已保存！可在<a href="records.html" style="color:white;text-decoration:underline;font-weight:bold;">个人记录</a>页面查看';
+            } else {
+                notification.innerHTML = '✅ 记录已保存（访客模式）！可在<a href="records.html" style="color:white;text-decoration:underline;font-weight:bold;">个人记录</a>页面查看';
+            }
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
         }
         
         console.log('========== 页面脚本加载完成 ==========');
