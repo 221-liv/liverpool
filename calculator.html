@@ -121,48 +121,67 @@
         </div>
         
         <!-- 结果展示区域 -->
-        <div id="results-section" class="results-section">
+        <div id="results-section" class=\"results-section\" style=\"display: none;\">
             <h3>计算结果</h3>
             
             <!-- 选项对比 -->
-            <div class="comparison-results">
-                <div class="result-item">
-                    <h4 id="option1-name">选项 1</h4>
-                    <div class="emission-value" id="option1-emission">0 kg CO₂e</div>
+            <div class=\"comparison-results\">
+                <div class=\"result-item\">
+                    <h4 id=\"option1-name\">选项 1</h4>
+                    <div class=\"emission-value\" id=\"option1-emission\">0 kg CO₂e</div>
                 </div>
-                <div class="result-item">
-                    <h4 id="option2-name">选项 2</h4>
-                    <div class="emission-value" id="option2-emission">0 kg CO₂e</div>
+                <div class=\"result-item\">
+                    <h4 id=\"option2-name\">选项 2</h4>
+                    <div class=\"emission-value\" id=\"option2-emission\">0 kg CO₂e</div>
                 </div>
             </div>
             
             <!-- 减排效果 -->
-            <div class="savings-result">
-                <div class="savings-item">
-                    <span class="label">碳减排量:</span>
-                    <span class="value" id="carbon-saved">0 kg CO₂e</span>
+            <div class=\"savings-result\">
+                <div class=\"savings-item\">
+                    <span class=\"label\">碳减排量:</span>
+                    <span class=\"value\" id=\"carbon-saved\">0 kg CO₂e</span>
                 </div>
-                <div class="savings-item">
-                    <span class="label">相当于种植树木:</span>
-                    <span class="value" id="trees-saved">0</span>
+                <div class=\"savings-item\">
+                    <span class=\"label\">相当于种植树木:</span>
+                    <span class=\"value\" id=\"trees-saved\">0 棵</span>
+                </div>
+            </div>
+            
+            <!-- 牛肉碳足迹构成分析（仅在选择牛肉时显示） -->
+            <div id=\"beef-breakdown\" class=\"beef-breakdown-section\" style=\"display: none;\">
+                <h4>🐄 牛肉碳足迹构成分析</h4>
+                <p class=\"breakdown-intro\">牛肉的碳足迹为每公斤约27kg CO₂e，是所有常见肉类中最高的。以下是其碳排放的主要来源：</p>
+                <div class=\"breakdown-chart\">
+                    <!-- JavaScript 动态填充柱状图 -->
+                </div>
+                <div class=\"breakdown-explanation\">
+                    <h5>主要排放来源说明：</h5>
+                    <ul>
+                        <li><strong>肠道发酵 (40%)</strong>：牛在消化过程中会通过打嗝排放大量甲烷，甲烷的温室效应是二氧化碳的25倍</li>
+                        <li><strong>饲料生产 (26%)</strong>：种植饲料需要大量土地、水资源和化肥，养一头牛需要消耗8-10公斤饲料</li>
+                        <li><strong>粪便管理 (10%)</strong>：牛粪在储存和处理过程中会释放甲烷和氧化亚氮</li>
+                        <li><strong>其他环节 (24%)</strong>：包括农场能源使用、加工、运输和零售等环节</li>
+                    </ul>
+                    <p class=\"reduction-suggestion\">💡 <strong>减排建议</strong>：减少牛肉消费，选择鸡肉（6 kg CO₂e/kg）或植物蛋白，每周少吃一次牛肉可减少约27kg碳排放。</p>
                 </div>
             </div>
             
             <!-- 环保建议 -->
-            <div class="reduction-tips">
+            <div class=\"reduction-tips\">
                 <h4>环保建议</h4>
-                <ul id="reduction-tips">
+                <ul id=\"reduction-tips\">
                     <!-- JavaScript 动态填充 -->
                 </ul>
             </div>
             
             <!-- 记录保存 -->
-            <div class="save-record">
-                <div class="form-group">
-                    <label for="record-notes">备注 (可选)</label>
-                    <textarea id="record-notes" rows="3" placeholder="添加记录备注..."></textarea>
+            <div class=\"save-record\">
+                <div class=\"form-group\">
+                    <label for=\"record-notes\">备注 (可选)</label>
+                    <textarea id=\"record-notes\" rows=\"3\" placeholder=\"添加记录备注...\"></textarea>
                 </div>
-                <button id="save-btn" class="secondary-button" disabled>保存记录</button>
+                <button id=\"save-btn\" class=\"secondary-button\" disabled>保存记录</button>
             </div>
         </div>
         

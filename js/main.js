@@ -274,30 +274,46 @@ class Calculator {
         };
 
         const labels = {
-            entericFermentation: '肠道发酵 (40%)',
-            feedProduction: '饲料生产 (26%)',
-            manureManagement: '粪便管理 (10%)',
-            farmEnergyUse: '农场能源使用 (7%)',
-            processing: '加工处理 (4%)',
-            transportation: '运输配送 (5%)',
-            retail: '零售环节 (3%)',
-            other: '其他 (5%)'
+            entericFermentation: '肠道发酵',
+            feedProduction: '饲料生产',
+            manureManagement: '粪便管理',
+            farmEnergyUse: '农场能源使用',
+            processing: '加工处理',
+            transportation: '运输配送',
+            retail: '零售环节',
+            other: '其他'
         };
 
-        // 创建简单的可视化
-        let html = '<div class="breakdown-bars">';
+        // 创建柱状图可视化
+        let html = '';
         for (const [key, value] of Object.entries(breakdown)) {
             html += `
                 <div class="breakdown-item">
-                    <div class="breakdown-label">${labels[key]}</div>
-                    <div class="breakdown-bar" style="width: ${value}%;">
-                        <div class="breakdown-value">${value}%</div>
+                    <div class="breakdown-label">${labels[key]} (${value}%)</div>
+                    <div class="breakdown-bar-container">
+                        <div class="breakdown-bar" style="width: ${value}%;">
+                            <span class="breakdown-value">${value}%</span>
+                        </div>
                     </div>
                 </div>
             `;
         }
-        html += '</div>';
         breakdownChart.innerHTML = html;
+    }
+    
+    // 检查是否选择了牛肉并显示分析
+    checkAndShowBeefBreakdown(option1Item, option2Item) {
+        const beefBreakdown = document.getElementById('beef-breakdown');
+        if (!beefBreakdown) return;
+        
+        const hasBeef = option1Item === 'beef' || option2Item === 'beef';
+        
+        if (hasBeef) {
+            beefBreakdown.style.display = 'block';
+            this.showBeefBreakdown();
+        } else {
+            beefBreakdown.style.display = 'none';
+        }
     }
 }
 
@@ -445,7 +461,7 @@ Calculator.prototype.displayComparisonResults = function(result) {
 
     // 格式化碳排放量显示
     const formatEmission = (amount) => {
-        return window.utils?.formatCarbonEmission(amount) || (amount.toFixed(2) + ' kg');
+        return window.utils?.formatCarbonEmission(amount) || (amount.toFixed(2) + ' kg CO₂e');
     };
 
     if (document.getElementById('option1-emission')) {
@@ -462,7 +478,12 @@ Calculator.prototype.displayComparisonResults = function(result) {
     const calculator = window.carbonCalculator;
     const treesSaved = calculator ? calculator.calculateEquivalentTrees(result.savings) : (result.savings / 21.77);
     if (document.getElementById('trees-saved')) {
-        document.getElementById('trees-saved').textContent = treesSaved.toFixed(2);
+        document.getElementById('trees-saved').textContent = treesSaved.toFixed(2) + ' 棵';
+    }
+
+    // 如果是食品计算且选择了牛肉，显示牛肉碳足迹构成分析
+    if (this.currentTab === 'food') {
+        this.checkAndShowBeefBreakdown(result.option1.item, result.option2.item);
     }
 
     // 显示环保建议

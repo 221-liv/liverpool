@@ -84,7 +84,7 @@ const TRANSPORT_OPTIONS = [
 
 // 能源类型选项
 const ENERGY_OPTIONS = [
-    { value: 'electricity', label: ' electricity', unit: 'kWh' },
+    { value: 'electricity', label: '电力', unit: 'kWh' },
     { value: 'natural_gas', label: '天然气', unit: 'm³' },
     { value: 'coal', label: '煤炭', unit: 'kg' },
     { value: 'gasoline', label: '汽油', unit: 'L' },
@@ -142,9 +142,8 @@ const ADMIN_CREDENTIALS = {
     password: '351027'  // 管理员密码
 };
 
-// 模拟班级用户数据
-const MOCK_CLASS_USERS = [
-];
+// 模拟班级用户数据（已移除，不需要模拟数据）
+const MOCK_CLASS_USERS = [];
 
 // 导出常量供其他模块使用
 if (typeof module !== 'undefined') {
