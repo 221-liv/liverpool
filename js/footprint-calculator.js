@@ -187,24 +187,7 @@ class CarbonFootprintCalculator {
     // 初始化计算器
     init() {
         console.log('碳足迹计算器初始化完成');
-        // 绑定计算按钮事件
-        this.bindCalculateButton();
-    }
-    
-    // 绑定计算按钮事件
-    bindCalculateButton() {
-        try {
-            const calculateBtn = document.getElementById('calculate-btn');
-            if (calculateBtn) {
-                calculateBtn.addEventListener('click', () => {
-                    console.log('计算按钮被点击');
-                    // 这里通常会调用页面上的计算方法
-                    // 具体实现由页面逻辑处理
-                });
-            }
-        } catch (error) {
-            console.error('绑定计算按钮事件时出错:', error);
-        }
+        // 注意：不在这里绑定按钮事件，由main.js统一处理
     }
     
     // 保存记录

@@ -629,10 +629,14 @@ function initializePage() {
         ensureConstantsDefined();
         
         console.log('页面初始化开始，当前路径:', window.location.pathname);
+        console.log('当前URL:', window.location.href);
         
-        // 检查当前是否为计算器页面
-        if (window.location.pathname.includes('calculator.html') || window.location.pathname.endsWith('/calculator')) {
-            console.log('计算器页面初始化...');
+        // 检查当前是否为计算器页面（更宽松的检查）
+        const isCalculatorPage = window.location.pathname.includes('calculator') || 
+                                 document.getElementById('calculate-btn') !== null;
+        
+        if (isCalculatorPage) {
+            console.log('✅ 检测到计算器页面，开始初始化...');
             
             // 绝对不执行任何登录检查
             console.log('计算器页面以访客模式运行，无需登录');

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>诊断页面</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        button {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #log {
+            background: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 计算器功能诊断</h1>
+    
+    <div class="test-section">
+        <h3>1. 文件加载检测</h3>
+        <div id="file-check"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. DOM元素检测</h3>
+        <div id="dom-check"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 功能测试</h3>
+        <button onclick="testCalculation()">测试计算功能</button>
+        <button onclick="clearLog()">清空日志</button>
+        <div id="test-result" style="margin-top: 15px;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 控制台日志</h3>
+        <div id="log"></div>
+    </div>
+    
+    <!-- 加载所有JS文件 -->
+    <script src="js/constants.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/footprint-calculator.js"></script>
+    <script src="js/main.js"></script>
+    
+    <script>
+        // 日志收集
+        const logs = [];
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            logs.push(['LOG', ...args]);
+            updateLogDisplay();
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            logs.push(['ERROR', ...args]);
+            updateLogDisplay();
+            originalError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            logs.push(['WARN', ...args]);
+            updateLogDisplay();
+            originalWarn.apply(console, args);
+        };
+        
+        function updateLogDisplay() {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML = logs.map(log => {
+                const type = log[0];
+                const msg = log.slice(1).map(item => {
+                    if (typeof item === 'object') {
+                        return JSON.stringify(item, null, 2);
+                    }
+                    return String(item);
+                }).join(' ');
+                
+                let color = '#000';
+                if (type === 'ERROR') color = '#dc3545';
+                if (type === 'WARN') color = '#ffc107';
+                
+                return `<div style="color: ${color}; margin: 3px 0;">[${type}] ${msg}</div>`;
+            }).join('');
+            
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            logs.length = 0;
+            updateLogDisplay();
+        }
+        
+        // 检查文件加载
+        function checkFiles() {
+            const fileCheckDiv = document.getElementById('file-check');
+            let html = '';
+            
+            const checks = [
+                { name: 'EMISSION_FACTORS', obj: window.EMISSION_FACTORS },
+                { name: 'TRANSPORT_OPTIONS', obj: window.TRANSPORT_OPTIONS },
+                { name: 'DIET_OPTIONS', obj: window.DIET_OPTIONS },
+                { name: 'utils', obj: window.utils },
+                { name: 'carbonCalculator', obj: window.carbonCalculator },
+                { name: 'Calculator', obj: window.Calculator }
+            ];
+            
+            checks.forEach(check => {
+                const exists = typeof check.obj !== 'undefined';
+                const className = exists ? 'success' : 'error';
+                const icon = exists ? '✅' : '❌';
+                html += `<div class="status ${className}">${icon} ${check.name}: ${exists ? '已加载' : '未加载'}</div>`;
+            });
+            
+            fileCheckDiv.innerHTML = html;
+        }
+        
+        // 检查DOM元素
+        function checkDOM() {
+            const domCheckDiv = document.getElementById('dom-check');
+            let html = '';
+            
+            // 注意：当前页面没有这些元素，这是正常的
+            html += '<div class="status info">ℹ️ 当前页面是诊断页面，不包含计算器元素（这是正常的）</div>';
+            html += '<div class="status info">📝 以下检查应该在 calculator.html 页面进行：</div>';
+            
+            const elements = [
+                'calculate-btn',
+                'transport-type-1',
+                'distance-1',
+                'food-type-1',
+                'food-amount-1',
+                'results-section'
+            ];
+            
+            elements.forEach(id => {
+                const elem = document.getElementById(id);
+                const exists = elem !== null;
+                const className = 'info';
+                const icon = exists ? '✅' : '⚠️';
+                html += `<div class="status ${className}">${icon} #${id}: ${exists ? '存在' : '不存在（诊断页面无此元素）'}</div>`;
+            });
+            
+            domCheckDiv.innerHTML = html;
+        }
+        
+        // 测试计算功能
+        function testCalculation() {
+            const resultDiv = document.getElementById('test-result');
+            console.log('========== 开始功能测试 ==========');
+            
+            try {
+                // 测试数据
+                const testData = {
+                    type: 'transportation',
+                    item1: 'car_medium',
+                    amount1: 10,
+                    item2: 'subway',
+                    amount2: 10
+                };
+                
+                console.log('测试数据:', testData);
+                
+                // 获取排放因子
+                if (!window.EMISSION_FACTORS) {
+                    throw new Error('EMISSION_FACTORS 未定义');
+                }
+                
+                const factors = window.EMISSION_FACTORS[testData.type];
+                if (!factors) {
+                    throw new Error(`未找到 ${testData.type} 的排放因子`);
+                }
+                
+                const factor1 = factors[testData.item1];
+                const factor2 = factors[testData.item2];
+                
+                console.log('排放因子1:', factor1);
+                console.log('排放因子2:', factor2);
+                
+                if (typeof factor1 !== 'number' || typeof factor2 !== 'number') {
+                    throw new Error('排放因子不是数字');
+                }
+                
+                // 计算排放量
+                const emission1 = testData.amount1 * factor1;
+                const emission2 = testData.amount2 * factor2;
+                const savings = Math.abs(emission1 - emission2);
+                const trees = (savings / 21.77).toFixed(2);
+                
+                console.log('排放量1:', emission1, 'kg CO₂e');
+                console.log('排放量2:', emission2, 'kg CO₂e');
+                console.log('减排量:', savings, 'kg CO₂e');
+                console.log('相当于树木:', trees, '棵');
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">
+                        <strong>✅ 计算功能正常！</strong><br><br>
+                        <strong>测试场景：</strong>10公里通勤对比<br>
+                        • 中型汽车：${emission1.toFixed(3)} kg CO₂e<br>
+                        • 地铁：${emission2.toFixed(3)} kg CO₂e<br>
+                        • 减排量：${savings.toFixed(3)} kg CO₂e<br>
+                        • 相当于种植：${trees} 棵树
+                    </div>
+                `;
+                
+                console.log('✅ 测试通过');
+                
+            } catch (error) {
+                console.error('❌ 测试失败:', error);
+                resultDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ 测试失败</strong><br><br>
+                        错误信息: ${error.message}<br>
+                        错误堆栈: ${error.stack}
+                    </div>
+                `;
+            }
+            
+            console.log('========== 测试结束 ==========');
+        }
+        
+        // 页面加载后执行检查
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('诊断页面已加载');
+            setTimeout(() => {
+                checkFiles();
+                checkDOM();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
