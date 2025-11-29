@@ -5,10 +5,215 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理员后台 - 25-10矿大能动</title>
     <link rel="stylesheet" href="css/styles.css">
-    <script src="js/constants.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/footprint-calculator.js"></script>
-    <script src="js/main.js" defer></script>
+    <script src=\"js/constants.js\"></script>
+    <script src=\"js/utils.js\"></script>
+    <script src=\"js/footprint-calculator.js\"></script>
+    <script>
+        // 管理员页面脚本
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminLogin = document.getElementById('admin-login');
+            const adminDashboard = document.getElementById('admin-dashboard');
+            const loginBtn = document.getElementById('admin-login-btn');
+            const logoutBtn = document.getElementById('admin-logout');
+            const exportBtn = document.getElementById('export-data-btn');
+            const loginError = document.getElementById('login-error');
+            
+            // 简单的管理员验证（实际应用中应该使用后端验证）
+            const ADMIN_CREDENTIALS = {
+                '王榆腾': '351027',
+                'teacher': '251025'
+            };
+            
+            // 检查是否已登录
+            const isAdminLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            if (isAdminLoggedIn === 'true') {
+                showDashboard();
+            }
+            
+            // 登录按钮事件
+            loginBtn.addEventListener('click', function() {
+                const username = document.getElementById('admin-username').value.trim();
+                const password = document.getElementById('admin-password').value;
+                
+                if (ADMIN_CREDENTIALS[username] === password) {
+                    sessionStorage.setItem('adminLoggedIn', 'true');
+                    showDashboard();
+                } else {
+                    loginError.textContent = '用户名或密码错误';
+                    loginError.style.display = 'block';
+                    setTimeout(() => {
+                        loginError.style.display = 'none';
+                    }, 3000);
+                }
+            });
+            
+            // 退出登录
+            logoutBtn.addEventListener('click', function() {
+                sessionStorage.removeItem('adminLoggedIn');
+                adminDashboard.style.display = 'none';
+                adminLogin.style.display = 'block';
+            });
+            
+            // 导出数据
+            exportBtn.addEventListener('click', function() {
+                exportData();
+            });
+            
+            // 显示仪表盘
+            function showDashboard() {
+                adminLogin.style.display = 'none';
+                adminDashboard.style.display = 'flex';
+                loadDashboardData();
+            }
+            
+            // 加载仪表盘数据
+            function loadDashboardData() {
+                try {
+                    // 获取所有用户记录
+                    const userRecords = JSON.parse(localStorage.getItem('userRecords') || '[]');
+                    const guestRecords = JSON.parse(localStorage.getItem('guestRecords') || '[]');
+                    const allRecords = [...userRecords, ...guestRecords];
+                    
+                    // 按用户分组统计
+                    const userStats = {};
+                    
+                    userRecords.forEach(record => {
+                        const id = record.studentId || 'unknown';
+                        if (!userStats[id]) {
+                            userStats[id] = {
+                                studentId: id,
+                                userName: record.userName || '未知',
+                                totalEmission: 0,
+                                totalSavings: 0,
+                                recordCount: 0,
+                                lastUpdate: record.timestamp
+                            };
+                        }
+                        userStats[id].totalEmission += record.totalEmission || 0;
+                        userStats[id].totalSavings += record.savings || 0;
+                        userStats[id].recordCount++;
+                        if (new Date(record.timestamp) > new Date(userStats[id].lastUpdate)) {
+                            userStats[id].lastUpdate = record.timestamp;
+                        }
+                    });
+                    
+                    // 添加访客统计
+                    if (guestRecords.length > 0) {
+                        userStats['guest'] = {
+                            studentId: '访客',
+                            userName: '访客用户',
+                            totalEmission: guestRecords.reduce((sum, r) => sum + (r.totalEmission || 0), 0),
+                            totalSavings: guestRecords.reduce((sum, r) => sum + (r.savings || 0), 0),
+                            recordCount: guestRecords.length,
+                            lastUpdate: guestRecords[guestRecords.length - 1].timestamp
+                        };
+                    }
+                    
+                    // 更新统计卡片
+                    const totalUsers = Object.keys(userStats).length;
+                    const totalRecords = allRecords.length;
+                    const totalEmission = allRecords.reduce((sum, r) => sum + (r.totalEmission || 0), 0);
+                    const avgEmission = totalRecords > 0 ? totalEmission / totalRecords : 0;
+                    
+                    document.getElementById('stat-total-users').textContent = totalUsers;
+                    document.getElementById('stat-total-records').textContent = totalRecords;
+                    document.getElementById('stat-total-emission').textContent = totalEmission.toFixed(2) + ' kg';
+                    document.getElementById('stat-average-emission').textContent = avgEmission.toFixed(2) + ' kg';
+                    
+                    // 显示用户表格
+                    displayUserTable(userStats);
+                    
+                } catch (error) {
+                    console.error('加载数据失败:', error);
+                }
+            }
+            
+            // 显示用户表格
+            function displayUserTable(userStats) {
+                const tbody = document.getElementById('users-table-body');
+                tbody.innerHTML = '';
+                
+                // 转换为数组并排序
+                const users = Object.values(userStats).sort((a, b) => b.totalEmission - a.totalEmission);
+                
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan=\"5\" style=\"text-align:center;padding:30px;color:#999;\">暂无数据</td></tr>';
+                    return;
+                }
+                
+                users.forEach((user, index) => {
+                    const row = document.createElement('tr');
+                    const date = new Date(user.lastUpdate);
+                    const dateStr = date.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${user.userName}</td>
+                        <td>${user.studentId}</td>
+                        <td>${user.totalEmission.toFixed(2)} kg <small style=\"color:#2e7d32;\">(节约${user.totalSavings.toFixed(2)}kg)</small></td>
+                        <td>${dateStr}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            
+            // 导出数据为CSV
+            function exportData() {
+                try {
+                    const userRecords = JSON.parse(localStorage.getItem('userRecords') || '[]');
+                    const guestRecords = JSON.parse(localStorage.getItem('guestRecords') || '[]');
+                    const allRecords = [...userRecords, ...guestRecords];
+                    
+                    if (allRecords.length === 0) {
+                        alert('暂无数据可导出');
+                        return;
+                    }
+                    
+                    // CSV表头
+                    let csv = '时间,学号,姓名,活动类型,选项1,选项1数量,选项1排放,选项2,选项2数量,选项2排放,总排放,节约量\\n';
+                    
+                    // CSV数据
+                    allRecords.forEach(record => {
+                        const date = new Date(record.timestamp).toLocaleString('zh-CN');
+                        csv += `${date},`;
+                        csv += `${record.studentId || '访客'},`;
+                        csv += `${record.userName || '访客'},`;
+                        csv += `${record.activityType === 'transportation' ? '交通' : '食品'},`;
+                        csv += `${record.option1Label},`;
+                        csv += `${record.option1Amount},`;
+                        csv += `${record.option1Emission.toFixed(3)},`;
+                        csv += `${record.option2Label},`;
+                        csv += `${record.option2Amount},`;
+                        csv += `${record.option2Emission.toFixed(3)},`;
+                        csv += `${record.totalEmission.toFixed(3)},`;
+                        csv += `${record.savings.toFixed(3)}\\n`;
+                    });
+                    
+                    // 下载CSV文件
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `碳足迹数据_${new Date().toISOString().split('T')[0]}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    alert('数据导出成功！');
+                } catch (error) {
+                    console.error('导出数据失败:', error);
+                    alert('导出数据失败: ' + error.message);
+                }
+            }
+        });
+    </script>
 </head>
 <body>
     <header>

@@ -10,13 +10,16 @@
     <script src="js/footprint-calculator.js"></script>
     <script src="js/main.js" defer></script>
     <script>
-        // 检查登录状态
+        // 个人记录页面 - 访客模式（无需登录）
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('个人记录页面初始化（访客模式）');
+            
             // 检查本地存储中是否有STORAGE_KEYS对象
             if (!window.STORAGE_KEYS) {
                 window.STORAGE_KEYS = {
                     USER_INFO: 'userInfo',
                     USER_RECORDS: 'userRecords',
+                    GUEST_RECORDS: 'guestRecords',  // 访客记录
                     CLASS_RANKING: 'classRanking'
                 };
             }
@@ -24,21 +27,26 @@
             // 检查用户是否已登录
             let userInfo = null;
             try {
-                if (window.utils && window.utils.storage && typeof window.utils.storage.get === 'function') {
-                    userInfo = window.utils.storage.get(STORAGE_KEYS.USER_INFO);
-                } else {
-                    const storedInfo = localStorage.getItem(STORAGE_KEYS.USER_INFO);
-                    if (storedInfo) {
-                        userInfo = JSON.parse(storedInfo);
-                    }
+                const storedInfo = localStorage.getItem(STORAGE_KEYS.USER_INFO);
+                if (storedInfo) {
+                    userInfo = JSON.parse(storedInfo);
                 }
             } catch (error) {
                 console.error('获取用户信息失败:', error);
             }
             
-            // 如果未登录，跳转到登录页面
-            if (!userInfo) {
-                window.location.href = 'login.html';
+            // 更新页面标题和提示
+            const pageTitle = document.querySelector('main h2');
+            if (userInfo) {
+                pageTitle.textContent = `${userInfo.name}的碳足迹记录`;
+            } else {
+                pageTitle.textContent = '个人碳足迹记录（访客模式）';
+                // 添加登录提示
+                const loginTip = document.createElement('div');
+                loginTip.className = 'info-message';
+                loginTip.style.cssText = 'background:#e3f2fd;padding:15px;border-radius:8px;margin-bottom:20px;color:#1976d2;';
+                loginTip.innerHTML = '<strong>提示：</strong>您当前使用访客模式，记录仅保存在本地浏览器中。<a href="login.html" style="color:#1976d2;text-decoration:underline;">点击登录</a>后可将记录绑定到您的账户。';
+                pageTitle.after(loginTip);
             }
             
             // 更新导航栏
@@ -54,20 +62,95 @@
                 if (logoutButton) {
                     logoutButton.addEventListener('click', function(e) {
                         e.preventDefault();
-                        try {
-                            if (window.utils && window.utils.storage && typeof window.utils.storage.remove === 'function') {
-                                window.utils.storage.remove(STORAGE_KEYS.USER_INFO);
-                            } else {
-                                localStorage.removeItem(STORAGE_KEYS.USER_INFO);
-                            }
-                            window.location.href = 'login.html';
-                        } catch (error) {
-                            console.error('退出登录失败:', error);
+                        if (confirm('退出登录后将切换为访客模式，确定要退出吗？')) {
+                            localStorage.removeItem(STORAGE_KEYS.USER_INFO);
+                            location.reload();
                         }
                     });
                 }
             }
+            
+            // 加载记录数据
+            loadRecords(userInfo);
         });
+        
+        // 加载记录数据
+        function loadRecords(userInfo) {
+            let records = [];
+            
+            try {
+                if (userInfo) {
+                    // 登录用户：加载用户记录
+                    const userRecords = localStorage.getItem(STORAGE_KEYS.USER_RECORDS);
+                    if (userRecords) {
+                        const allRecords = JSON.parse(userRecords);
+                        records = allRecords.filter(r => r.studentId === userInfo.studentId);
+                    }
+                } else {
+                    // 访客模式：加载访客记录
+                    const guestRecords = localStorage.getItem(STORAGE_KEYS.GUEST_RECORDS);
+                    if (guestRecords) {
+                        records = JSON.parse(guestRecords);
+                    }
+                }
+                
+                console.log('加载到的记录数:', records.length);
+                displayRecords(records);
+                updateStats(records);
+            } catch (error) {
+                console.error('加载记录失败:', error);
+            }
+        }
+        
+        // 显示记录
+        function displayRecords(records) {
+            const tbody = document.getElementById('records-table-body');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#999;">暂无记录，快去<a href="calculator.html" style="color:#2e7d32;">计算器</a>创建第一条记录吧！</td></tr>';
+                return;
+            }
+            
+            // 按时间倒序排列
+            records.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                const date = new Date(record.timestamp);
+                const dateStr = date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                row.innerHTML = `
+                    <td>${dateStr}</td>
+                    <td>${record.studentId || '访客'}</td>
+                    <td>${record.activityType === 'transportation' ? '交通' : '食品'}</td>
+                    <td>${record.option1Label} (${record.option1Amount}${record.activityType === 'transportation' ? 'km' : 'kg'})</td>
+                    <td>${record.option2Label} (${record.option2Amount}${record.activityType === 'transportation' ? 'km' : 'kg'})</td>
+                    <td>${record.totalEmission.toFixed(3)} kg</td>
+                    <td style="color:#2e7d32;font-weight:bold;">${record.savings.toFixed(3)} kg</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 更新统计数据
+        function updateStats(records) {
+            const totalRecords = records.length;
+            const totalEmission = records.reduce((sum, r) => sum + r.totalEmission, 0);
+            const avgEmission = totalRecords > 0 ? totalEmission / totalRecords : 0;
+            
+            document.getElementById('stats-total-records').textContent = totalRecords;
+            document.getElementById('stats-total-emission').textContent = totalEmission.toFixed(2) + ' kg';
+            document.getElementById('stats-average-emission').textContent = avgEmission.toFixed(2) + ' kg';
+        }
     </script>
 </head>
 <body>

@@ -478,6 +478,22 @@
                 const tipsList = document.getElementById('reduction-tips');
                 tipsList.innerHTML = tips.map(tip => `<li>${tip}</li>`).join('');
                 
+                // 保存记录
+                saveRecord({
+                    activityType: type,
+                    option1: item1,
+                    option1Label: LABELS[type][item1],
+                    option1Amount: amount1,
+                    option1Emission: emission1,
+                    option2: item2,
+                    option2Label: LABELS[type][item2],
+                    option2Amount: amount2,
+                    option2Emission: emission2,
+                    totalEmission: emission1 + emission2,
+                    savings: savings,
+                    timestamp: new Date().toISOString()
+                });
+                
                 // 显示结果区域
                 document.getElementById('results-section').style.display = 'block';
                 
@@ -490,6 +506,33 @@
                 console.error('❌ 计算过程中出错:', error);
                 console.error('错误堆栈:', error.stack);
                 alert('计算出错: ' + error.message + '\n请刷新页面重试');
+            }
+        }
+        
+        // 保存记录到本地存储
+        function saveRecord(record) {
+            try {
+                // 检查是否登录
+                const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null');
+                
+                if (userInfo) {
+                    // 登录用户：保存到用户记录
+                    record.studentId = userInfo.studentId;
+                    record.userName = userInfo.name;
+                    
+                    const userRecords = JSON.parse(localStorage.getItem('userRecords') || '[]');
+                    userRecords.push(record);
+                    localStorage.setItem('userRecords', JSON.stringify(userRecords));
+                    console.log('✅ 记录已保存到用户记录');
+                } else {
+                    // 访客模式：保存到访客记录
+                    const guestRecords = JSON.parse(localStorage.getItem('guestRecords') || '[]');
+                    guestRecords.push(record);
+                    localStorage.setItem('guestRecords', JSON.stringify(guestRecords));
+                    console.log('✅ 记录已保存到访客记录');
+                }
+            } catch (error) {
+                console.error('❌ 保存记录失败:', error);
             }
         }
         
