@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>直接导入用户 - 碳足迹计算器</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h1 {
+            color: #2e7d32;
+            margin-top: 0;
+        }
+        .btn {
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .btn:hover {
+            background-color: #1b5e20;
+        }
+        .btn-danger {
+            background-color: #d32f2f;
+        }
+        .btn-danger:hover {
+            background-color: #b71c1c;
+        }
+        .log-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: #f9f9f9;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #2e7d32;
+        }
+        .error {
+            color: #d32f2f;
+        }
+        .warning {
+            color: #f57c00;
+        }
+        .info {
+            color: #1976d2;
+        }
+        .user-list {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f7f1;
+            border-radius: 4px;
+        }
+        .user-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .user-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>直接导入用户数据</h1>
+        <p>此页面将直接导入15名学生用户到系统中，使用正确的存储机制，确保系统能够识别这些用户。</p>
+        
+        <div class="user-list">
+            <h3>待导入用户列表（共15名）：</h3>
+            <div id="userItems"></div>
+        </div>
+        
+        <button id="importBtn" class="btn">立即导入所有用户</button>
+        <button id="clearBtn" class="btn btn-danger">清空用户数据</button>
+        <button id="verifyBtn" class="btn">验证导入结果</button>
+        
+        <div class="log-container" id="logs"></div>
+    </div>
+
+    <script>
+        // 确保STORAGE_KEYS存在（与auth.js保持一致）
+        if (!window.STORAGE_KEYS) {
+            window.STORAGE_KEYS = {
+                USER_INFO: 'userInfo',
+                USER_RECORDS: 'userRecords',
+                GUEST_RECORDS: 'guestRecords',
+                CLASS_RANKING: 'classRanking'
+            };
+        }
+
+        // 学生数据
+        const students = [
+            { name: "胡昊杨", studentId: "17252404" },
+            { name: "冒鈺城", studentId: "17250514" },
+            { name: "刘钊源", studentId: "17250082" },
+            { name: "刘彦钊", studentId: "17253321" },
+            { name: "张晨", studentId: "17253334" },
+            { name: "金扬颖", studentId: "15245793" },
+            { name: "张宇欣", studentId: "17255887" },
+            { name: "吕彦博", studentId: "17251502" },
+            { name: "谢浩然", studentId: "17251546" },
+            { name: "夏雨璨", studentId: "17251531" },
+            { name: "宁佳佳", studentId: "17255417" },
+            { name: "赵雅星", studentId: "17255893" },
+            { name: "唐于杰", studentId: "17253344" },
+            { name: "何剑飞", studentId: "17253299" },
+            { name: "周宇翔", studentId: "17254248" }
+        ];
+
+        // 日志函数
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logClass = {
+                'success': 'success',
+                'error': 'error',
+                'warning': 'warning',
+                'info': 'info'
+            }[type] || 'info';
+            
+            const now = new Date().toLocaleTimeString();
+            logsDiv.innerHTML += `<div class="${logClass}">[${now}] ${message}</div>`;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        // 显示用户列表
+        function displayUserList() {
+            const userItemsDiv = document.getElementById('userItems');
+            students.forEach((student, index) => {
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item';
+                userItem.textContent = `${index + 1}. ${student.name} (${student.studentId})`;
+                userItemsDiv.appendChild(userItem);
+            });
+        }
+
+        // 导入用户函数
+        function importUsers() {
+            log('开始导入用户数据...', 'info');
+            
+            // 确保localStorage可用
+            if (typeof localStorage === 'undefined') {
+                log('错误：localStorage不可用！', 'error');
+                return;
+            }
+
+            // 1. 导入到全局用户列表（系统可能使用的allUsers）
+            let allUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
+            
+            // 2. 为每个用户分别保存数据（关键：使用auth.js的格式）
+            let addedCount = 0;
+            let existingCount = 0;
+
+            students.forEach(student => {
+                try {
+                    // 检查用户是否已在allUsers中存在
+                    const existingInAllUsers = allUsers.find(u => u.studentId === student.studentId);
+                    
+                    // 同时检查是否可以通过userRecords方式访问（系统可能使用的方式）
+                    const userRecordsKey = `${window.STORAGE_KEYS.USER_RECORDS}_${student.studentId}`;
+                    const hasUserRecord = localStorage.getItem(userRecordsKey) !== null;
+                    
+                    if (existingInAllUsers || hasUserRecord) {
+                        log(`⚠️ 用户已存在: ${student.name} (${student.studentId})`, 'warning');
+                        existingCount++;
+                    } else {
+                        // 添加到全局用户列表
+                        allUsers.push({
+                            name: student.name,
+                            studentId: student.studentId,
+                            createdAt: new Date().toISOString(),
+                            lastLogin: new Date().toISOString()
+                        });
+                        
+                        // 为用户创建单独的记录存储空间（关键：使用auth.js兼容的格式）
+                        localStorage.setItem(userRecordsKey, JSON.stringify([]));
+                        
+                        // 同时添加到users列表（如果系统使用）
+                        let usersList = JSON.parse(localStorage.getItem('users') || '[]');
+                        usersList.push({
+                            name: student.name,
+                            studentId: student.studentId
+                        });
+                        localStorage.setItem('users', JSON.stringify(usersList));
+                        
+                        addedCount++;
+                        log(`✅ 已导入: ${student.name} - ${student.studentId}`, 'success');
+                    }
+                } catch (error) {
+                    log(`❌ 导入用户 ${student.name} 失败: ${error.message}`, 'error');
+                }
+            });
+
+            // 保存全局用户列表
+            localStorage.setItem('allUsers', JSON.stringify(allUsers));
+
+            // 显示导入结果
+            log('\n====================================', 'info');
+            log(`导入完成！`, 'info');
+            log(`- 总共处理: ${students.length} 个用户`, 'info');
+            log(`- 新添加: ${addedCount} 个用户`, 'success');
+            log(`- 已存在: ${existingCount} 个用户`, 'warning');
+            log(`- 当前系统用户总数: ${allUsers.length} 个`, 'info');
+            log('====================================', 'info');
+            
+            // 验证导入结果
+            log('\n正在验证导入结果...', 'info');
+            verifyImport();
+        }
+
+        // 验证导入结果
+        function verifyImport() {
+            try {
+                const allUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
+                const usersList = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                log(`验证结果:`, 'info');
+                log(`- allUsers中用户数: ${allUsers.length}`, 'info');
+                log(`- users列表中用户数: ${usersList.length}`, 'info');
+                
+                // 随机验证几个用户是否有对应的记录空间
+                const sampleUsers = allUsers.slice(0, 3); // 验证前3个用户
+                sampleUsers.forEach(user => {
+                    const userRecordsKey = `${window.STORAGE_KEYS.USER_RECORDS}_${user.studentId}`;
+                    const hasRecordSpace = localStorage.getItem(userRecordsKey) !== null;
+                    log(`- 用户 ${user.name} (${user.studentId}) 记录空间: ${hasRecordSpace ? '✓ 存在' : '✗ 不存在'}`, 
+                        hasRecordSpace ? 'success' : 'error');
+                });
+            } catch (error) {
+                log(`验证过程出错: ${error.message}`, 'error');
+            }
+        }
+
+        // 清空用户数据
+        function clearUserData() {
+            if (confirm('确定要清空所有用户数据吗？此操作不可恢复！')) {
+                log('开始清空用户数据...', 'warning');
+                
+                try {
+                    // 清除全局用户列表
+                    localStorage.removeItem('allUsers');
+                    localStorage.removeItem('users');
+                    
+                    // 清除所有用户的记录
+                    students.forEach(student => {
+                        const userRecordsKey = `${window.STORAGE_KEYS.USER_RECORDS}_${student.studentId}`;
+                        localStorage.removeItem(userRecordsKey);
+                    });
+                    
+                    log('用户数据已清空！', 'success');
+                } catch (error) {
+                    log(`清空数据失败: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // 事件监听
+        document.getElementById('importBtn').addEventListener('click', importUsers);
+        document.getElementById('clearBtn').addEventListener('click', clearUserData);
+        document.getElementById('verifyBtn').addEventListener('click', verifyImport);
+        
+        // 页面加载时显示用户列表
+        displayUserList();
+        log('页面已加载，点击"立即导入所有用户"按钮开始导入。', 'info');
+    </script>
+</body>
+</html>
