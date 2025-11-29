@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证用户数据 - 碳足迹计算器</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h1 {
+            color: #2e7d32;
+            margin-top: 0;
+            text-align: center;
+        }
+        .status-box {
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            background-color: #f8f9fa;
+            border-left: 4px solid #34c759;
+        }
+        .status-success {
+            border-left-color: #34c759;
+            background-color: #e8f5e9;
+        }
+        .status-warning {
+            border-left-color: #ff9500;
+            background-color: #fff3cd;
+        }
+        .status-error {
+            border-left-color: #ff3b30;
+            background-color: #f8d7da;
+        }
+        .btn {
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #1b5e20;
+        }
+        .btn-secondary {
+            background-color: #757575;
+        }
+        .btn-secondary:hover {
+            background-color: #616161;
+        }
+        .btn-danger {
+            background-color: #ff3b30;
+        }
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+        .buttons {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .metrics {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+        .metric-card {
+            background-color: #f0f7f1;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            min-width: 150px;
+            margin: 10px;
+            flex: 1;
+            max-width: 250px;
+        }
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        .metric-label {
+            color: #555;
+            margin-top: 5px;
+        }
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .user-table th,
+        .user-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .user-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        .user-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-success {
+            background-color: #34c759;
+            color: white;
+        }
+        .badge-warning {
+            background-color: #ff9500;
+            color: white;
+        }
+        .badge-error {
+            background-color: #ff3b30;
+            color: white;
+        }
+        .logs {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 30px;
+            font-family: 'Courier New', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #444;
+        }
+        .log-success { color: #34c759; }
+        .log-error { color: #ff3b30; }
+        .log-warning { color: #ff9500; }
+        .log-info { color: #34aadc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>用户数据验证页面</h1>
+        
+        <div class="status-box" id="main-status">
+            <h2>🔄 正在验证用户数据...</h2>
+            <p>请点击下方按钮开始验证或重新导入用户数据。</p>
+        </div>
+        
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-value" id="total-users">0</div>
+                <div class="metric-label">总用户数</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="imported-users">0</div>
+                <div class="metric-label">已导入</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="records-count">0</div>
+                <div class="metric-label">记录空间</div>
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <button id="verifyBtn" class="btn">验证用户数据</button>
+            <button id="reimportBtn" class="btn btn-secondary">重新导入用户</button>
+            <button id="clearBtn" class="btn btn-danger">清空所有用户</button>
+        </div>
+        
+        <h3>用户列表</h3>
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th>姓名</th>
+                    <th>学号</th>
+                    <th>状态</th>
+                    <th>记录空间</th>
+                </tr>
+            </thead>
+            <tbody id="user-list">
+                <!-- 用户列表将动态生成 -->
+            </tbody>
+        </table>
+        
+        <h3>验证日志</h3>
+        <div class="logs" id="logs">
+            <!-- 日志将动态生成 -->
+        </div>
+    </div>
+
+    <script>
+        // 确保STORAGE_KEYS存在
+        if (!window.STORAGE_KEYS) {
+            window.STORAGE_KEYS = {
+                USER_RECORDS: 'carbon_footprint_records',
+                USER_INFO: 'user_info',
+                CLASS_RANKING: 'class_carbon_ranking',
+                ADMIN_LOGGED_IN: 'admin_logged_in',
+                USER_LOGGED_IN: 'user_logged_in'
+            };
+        }
+
+        // 预期的学生列表
+        const expectedStudents = [
+            { name: "胡昊杨", studentId: "17252404" },
+            { name: "冒鈺城", studentId: "17250514" },
+            { name: "刘钊源", studentId: "17250082" },
+            { name: "刘彦钊", studentId: "17253321" },
+            { name: "张晨", studentId: "17253334" },
+            { name: "金扬颖", studentId: "15245793" },
+            { name: "张宇欣", studentId: "17255887" },
+            { name: "吕彦博", studentId: "17251502" },
+            { name: "谢浩然", studentId: "17251546" },
+            { name: "夏雨璨", studentId: "17251531" },
+            { name: "宁佳佳", studentId: "17255417" },
+            { name: "赵雅星", studentId: "17255893" },
+            { name: "唐于杰", studentId: "17253344" },
+            { name: "何剑飞", studentId: "17253299" },
+            { name: "周宇翔", studentId: "17254248" }
+        ];
+
+        // 日志函数
+        function addLog(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logClass = {
+                'success': 'log-success',
+                'error': 'log-error',
+                'warning': 'log-warning',
+                'info': 'log-info'
+            }[type] || 'log-info';
+            
+            const now = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${logClass}`;
+            logEntry.textContent = `[${now}] ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        // 验证用户数据
+        function verifyUserData() {
+            addLog('开始验证用户数据...', 'info');
+            
+            try {
+                // 获取各种存储位置的用户数据
+                const allUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
+                const classUsers = JSON.parse(localStorage.getItem('classUsers') || '[]');
+                const rankingData = JSON.parse(localStorage.getItem(window.STORAGE_KEYS.CLASS_RANKING) || '{}');
+                
+                addLog(`发现 allUsers 中有 ${allUsers.length} 个用户`, 'info');
+                addLog(`发现 classUsers 中有 ${classUsers.length} 个用户`, 'info');
+                addLog(`发现排名数据中有 ${Object.keys(rankingData).length} 个用户记录`, 'info');
+                
+                // 验证预期的学生是否存在
+                let foundCount = 0;
+                const userList = document.getElementById('user-list');
+                userList.innerHTML = '';
+                
+                expectedStudents.forEach(student => {
+                    // 检查多种存储位置
+                    const existsInAllUsers = allUsers.some(u => u.studentId === student.studentId);
+                    const existsInClassUsers = classUsers.some(u => u.studentId === student.studentId);
+                    const existsInRanking = rankingData[student.studentId] !== undefined;
+                    const userRecordKey = `${window.STORAGE_KEYS.USER_RECORDS}_${student.studentId}`;
+                    const hasUserRecord = localStorage.getItem(userRecordKey) !== null;
+                    const hasUserInfo = localStorage.getItem(`${window.STORAGE_KEYS.USER_INFO}_${student.studentId}`) !== null;
+                    
+                    // 只要在任一存储位置存在就认为已导入
+                    const isImported = existsInAllUsers || existsInClassUsers || existsInRanking || hasUserRecord || hasUserInfo;
+                    
+                    if (isImported) {
+                        foundCount++;
+                    }
+                    
+                    // 创建表格行
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${student.name}</td>
+                        <td>${student.studentId}</td>
+                        <td><span class="status-badge ${isImported ? 'badge-success' : 'badge-error'}">${isImported ? '已导入' : '未导入'}</span></td>
+                        <td><span class="status-badge ${hasUserRecord ? 'badge-success' : 'badge-warning'}">${hasUserRecord ? '已创建' : '未创建'}</span></td>
+                    `;
+                    userList.appendChild(row);
+                });
+                
+                // 更新统计数据
+                document.getElementById('total-users').textContent = expectedStudents.length;
+                document.getElementById('imported-users').textContent = foundCount;
+                
+                // 统计记录空间数量
+                let recordCount = 0;
+                expectedStudents.forEach(student => {
+                    const userRecordKey = `${window.STORAGE_KEYS.USER_RECORDS}_${student.studentId}`;
+                    if (localStorage.getItem(userRecordKey) !== null) {
+                        recordCount++;
+                    }
+                });
+                document.getElementById('records-count').textContent = recordCount;
+                
+                // 更新主状态
+                const mainStatus = document.getElementById('main-status');
+                if (foundCount === expectedStudents.length) {
+                    mainStatus.className = 'status-box status-success';
+                    mainStatus.innerHTML = `
+                        <h2>✅ 验证成功！</h2>
+                        <p>所有 ${expectedStudents.length} 名用户都已成功导入系统。</p>
+                    `;
+                    addLog('✅ 所有用户都已成功导入！', 'success');
+                } else if (foundCount > 0) {
+                    mainStatus.className = 'status-box status-warning';
+                    mainStatus.innerHTML = `
+                        <h2>⚠️ 部分导入</h2>
+                        <p>成功导入了 ${foundCount}/${expectedStudents.length} 名用户，请点击"重新导入用户"按钮。</p>
+                    `;
+                    addLog(`⚠️ 部分导入: ${foundCount}/${expectedStudents.length} 名用户`, 'warning');
+                } else {
+                    mainStatus.className = 'status-box status-error';
+                    mainStatus.innerHTML = `
+                        <h2>❌ 未导入</h2>
+                        <p>没有发现任何用户数据，请点击"重新导入用户"按钮。</p>
+                    `;
+                    addLog('❌ 未发现任何用户数据', 'error');
+                }
+                
+            } catch (error) {
+                addLog(`验证过程出错: ${error.message}`, 'error');
+                const mainStatus = document.getElementById('main-status');
+                mainStatus.className = 'status-box status-error';
+                mainStatus.innerHTML = `
+                    <h2>❌ 验证出错</h2>
+                    <p>验证过程中发生错误：${error.message}</p>
+                `;
+            }
+        }
+
+        // 重新导入用户数据
+        function reimportUsers() {
+            addLog('开始重新导入用户数据...', 'info');
+            
+            try {
+                // 为每个学生创建或更新记录
+                let addedCount = 0;
+                
+                expectedStudents.forEach(student => {
+                    // 检查是否需要添加
+                    const userRecordKey = `${window.STORAGE_KEYS.USER_RECORDS}_${student.studentId}`;
+                    const hasExistingRecord = localStorage.getItem(userRecordKey) !== null;
+                    
+                    // 为用户创建记录存储空间（总是更新，确保存在）
+                    localStorage.setItem(userRecordKey, JSON.stringify([]));
+                    
+                    // 为用户创建单独的信息存储
+                    localStorage.setItem(`${window.STORAGE_KEYS.USER_INFO}_${student.studentId}`, JSON.stringify({
+                        name: student.name,
+                        studentId: student.studentId
+                    }));
+                    
+                    if (!hasExistingRecord) {
+                        addedCount++;
+                    }
+                    
+                    addLog(`✅ 处理用户: ${student.name} (${student.studentId})`, 'success');
+                });
+                
+                // 更新全局用户列表
+                const allUsers = expectedStudents.map(student => ({
+                    name: student.name,
+                    studentId: student.studentId,
+                    createdAt: new Date().toISOString()
+                }));
+                localStorage.setItem('allUsers', JSON.stringify(allUsers));
+                
+                // 更新班级用户列表
+                const classUsers = expectedStudents.map(student => ({
+                    name: student.name,
+                    studentId: student.studentId
+                }));
+                localStorage.setItem('classUsers', JSON.stringify(classUsers));
+                
+                // 更新排名数据
+                const rankingData = {};
+                expectedStudents.forEach(student => {
+                    rankingData[student.studentId] = {
+                        name: student.name,
+                        studentId: student.studentId,
+                        totalEmission: 0,
+                        totalSavings: 0,
+                        recordCount: 0,
+                        lastUpdated: new Date().toISOString()
+                    };
+                });
+                localStorage.setItem(window.STORAGE_KEYS.CLASS_RANKING, JSON.stringify(rankingData));
+                
+                addLog(`✅ 成功导入/更新 ${expectedStudents.length} 个用户！`, 'success');
+                addLog(`新增: ${addedCount} 个用户，更新: ${expectedStudents.length - addedCount} 个用户`, 'info');
+                
+                // 重新验证
+                verifyUserData();
+                
+            } catch (error) {
+                addLog(`导入过程出错: ${error.message}`, 'error');
+            }
+        }
+
+        // 清空所有用户数据
+        function clearUserData() {
+            if (confirm('确定要清空所有用户数据吗？此操作不可恢复！')) {
+                addLog('开始清空用户数据...', 'warning');
+                
+                try {
+                    // 清除所有相关的存储数据
+                    localStorage.removeItem('allUsers');
+                    localStorage.removeItem('classUsers');
+                    localStorage.removeItem(window.STORAGE_KEYS.CLASS_RANKING);
+                    
+                    // 清除每个用户的记录
+                    expectedStudents.forEach(student => {
+                        const userRecordKey = `${window.STORAGE_KEYS.USER_RECORDS}_${student.studentId}`;
+                        const userInfoKey = `${window.STORAGE_KEYS.USER_INFO}_${student.studentId}`;
+                        localStorage.removeItem(userRecordKey);
+                        localStorage.removeItem(userInfoKey);
+                    });
+                    
+                    addLog('✅ 所有用户数据已清空！', 'success');
+                    
+                    // 重新验证
+                    verifyUserData();
+                    
+                } catch (error) {
+                    addLog(`清空数据失败: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // 事件监听
+        document.getElementById('verifyBtn').addEventListener('click', verifyUserData);
+        document.getElementById('reimportBtn').addEventListener('click', reimportUsers);
+        document.getElementById('clearBtn').addEventListener('click', clearUserData);
+        
+        // 页面加载时自动验证
+        window.addEventListener('load', function() {
+            setTimeout(verifyUserData, 1000); // 延迟1秒执行，确保main.js中的自动导入先执行
+        });
+    </script>
+</body>
+</html>

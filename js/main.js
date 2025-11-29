@@ -11,6 +11,118 @@ if (!window.STORAGE_KEYS) {
     };
 }
 
+// ===== 自动导入用户数据功能 =====
+(function autoImportUsers() {
+    // 只有在非登录页面才执行，避免重复导入
+    if (window.location.pathname.includes('login.html') || 
+        window.location.pathname.includes('register.html')) {
+        return;
+    }
+    
+    try {
+        console.log('🔄 开始自动导入用户数据...');
+        
+        // 15名学生用户数据
+        const students = [
+            { name: "胡昊杨", studentId: "17252404" },
+            { name: "冒鈺城", studentId: "17250514" },
+            { name: "刘钊源", studentId: "17250082" },
+            { name: "刘彦钊", studentId: "17253321" },
+            { name: "张晨", studentId: "17253334" },
+            { name: "金扬颖", studentId: "15245793" },
+            { name: "张宇欣", studentId: "17255887" },
+            { name: "吕彦博", studentId: "17251502" },
+            { name: "谢浩然", studentId: "17251546" },
+            { name: "夏雨璨", studentId: "17251531" },
+            { name: "宁佳佳", studentId: "17255417" },
+            { name: "赵雅星", studentId: "17255893" },
+            { name: "唐于杰", studentId: "17253344" },
+            { name: "何剑飞", studentId: "17253299" },
+            { name: "周宇翔", studentId: "17254248" }
+        ];
+        
+        // 获取或创建全局用户列表
+        let allUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
+        let classUsers = JSON.parse(localStorage.getItem('classUsers') || '[]');
+        let addedCount = 0;
+        
+        // 导入每个用户
+        students.forEach(student => {
+            // 检查用户是否已存在（多种存储方式都检查）
+            const existsInAllUsers = allUsers.some(u => u.studentId === student.studentId);
+            const existsInClassUsers = classUsers.some(u => u.studentId === student.studentId);
+            const userRecordKey = `${window.STORAGE_KEYS.USER_RECORDS}_${student.studentId}`;
+            const hasUserRecord = localStorage.getItem(userRecordKey) !== null;
+            
+            if (!existsInAllUsers && !existsInClassUsers && !hasUserRecord) {
+                // 添加到所有可能用到的存储位置
+                allUsers.push({
+                    name: student.name,
+                    studentId: student.studentId,
+                    createdAt: new Date().toISOString()
+                });
+                
+                classUsers.push({
+                    name: student.name,
+                    studentId: student.studentId
+                });
+                
+                // 为用户创建记录存储空间
+                localStorage.setItem(userRecordKey, JSON.stringify([]));
+                
+                // 同时为用户创建单独的信息存储
+                localStorage.setItem(`${window.STORAGE_KEYS.USER_INFO}_${student.studentId}`, JSON.stringify({
+                    name: student.name,
+                    studentId: student.studentId
+                }));
+                
+                addedCount++;
+                console.log(`✅ 已导入用户: ${student.name} (${student.studentId})`);
+            }
+        });
+        
+        // 保存更新后的用户列表
+        localStorage.setItem('allUsers', JSON.stringify(allUsers));
+        localStorage.setItem('classUsers', JSON.stringify(classUsers));
+        
+        // 更新排名数据
+        updateClassRanking();
+        
+        if (addedCount > 0) {
+            console.log(`✅ 成功导入 ${addedCount} 个新用户！`);
+        } else {
+            console.log(`ℹ️ 用户数据已存在，无需重新导入`);
+        }
+    } catch (error) {
+        console.error('❌ 用户数据导入出错:', error.message);
+    }
+    
+    // 更新班级排名数据函数
+    function updateClassRanking() {
+        try {
+            let rankingData = JSON.parse(localStorage.getItem(window.STORAGE_KEYS.CLASS_RANKING) || '{}');
+            const allUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
+            
+            allUsers.forEach(user => {
+                if (!rankingData[user.studentId]) {
+                    rankingData[user.studentId] = {
+                        name: user.name,
+                        studentId: user.studentId,
+                        totalEmission: 0,
+                        totalSavings: 0,
+                        recordCount: 0,
+                        lastUpdated: new Date().toISOString()
+                    };
+                }
+            });
+            
+            localStorage.setItem(window.STORAGE_KEYS.CLASS_RANKING, JSON.stringify(rankingData));
+        } catch (error) {
+            console.error('❌ 更新排名数据失败:', error.message);
+        }
+    }
+})(); // 立即执行函数
+
 // 页面加载和初始化已完成
 // 以下是窗口级别的错误处理
 window.onerror = function(message, source, lineno, colno, error) {
