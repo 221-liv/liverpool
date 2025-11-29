@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速导入用户 - 碳足迹计算器</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #2e7d32;
+            margin-bottom: 20px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            font-family: monospace;
+            text-align: left;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        .btn {
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .btn:hover {
+            background-color: #1b5e20;
+        }
+        .btn-secondary {
+            background-color: #757575;
+        }
+        .btn-secondary:hover {
+            background-color: #616161;
+        }
+        .loading {
+            display: none;
+            font-size: 18px;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>快速导入用户数据</h1>
+        <p>此页面将直接导入15名学生用户到系统中。</p>
+        <button id="importBtn" class="btn">开始导入</button>
+        <button id="checkBtn" class="btn btn-secondary">检查用户数据</button>
+        <div class="loading" id="loading">正在导入，请稍候...</div>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        // 重写console.log以在页面上显示
+        const originalConsoleLog = console.log;
+        const statusDiv = document.getElementById('status');
+        
+        console.log = function(message) {
+            originalConsoleLog.apply(console, arguments);
+            const logMessage = typeof message === 'string' ? message : JSON.stringify(message, null, 2);
+            statusDiv.textContent += logMessage + '\n';
+            statusDiv.scrollTop = statusDiv.scrollHeight;
+        };
+
+        // 导入按钮点击事件
+        document.getElementById('importBtn').addEventListener('click', function() {
+            statusDiv.textContent = '';
+            document.getElementById('loading').style.display = 'block';
+            
+            // 动态加载导入脚本
+            const script = document.createElement('script');
+            script.src = 'import-users.js';
+            script.onload = function() {
+                document.getElementById('loading').style.display = 'none';
+                console.log('\n导入脚本执行完成！');
+            };
+            script.onerror = function() {
+                document.getElementById('loading').style.display = 'none';
+                console.error('导入脚本加载失败！');
+            };
+            document.body.appendChild(script);
+        });
+
+        // 检查用户数据按钮点击事件
+        document.getElementById('checkBtn').addEventListener('click', function() {
+            statusDiv.textContent = '=== 用户数据检查 ===\n';
+            
+            try {
+                const allUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
+                console.log(`系统中当前共有 ${allUsers.length} 个用户`);
+                
+                if (allUsers.length > 0) {
+                    console.log('\n用户列表:');
+                    allUsers.forEach((user, index) => {
+                        console.log(`${index + 1}. ${user.name} - ${user.studentId}`);
+                    });
+                }
+                
+                // 检查记录存储
+                console.log('\n=== 用户记录存储检查 ===');
+                let recordsCount = 0;
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith('userRecords_')) {
+                        const records = JSON.parse(localStorage.getItem(key) || '[]');
+                        const studentId = key.replace('userRecords_', '');
+                        console.log(`${studentId}: 共有 ${records.length} 条记录`);
+                        recordsCount++;
+                    }
+                }
+                console.log(`\n已创建 ${recordsCount} 个用户记录存储空间`);
+                
+            } catch (error) {
+                console.error('检查数据时出错:', error.message);
+            }
+        });
+
+        // 页面加载时自动检查
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('页面已加载，点击"开始导入"按钮导入用户数据。');
+        });
+    </script>
+</body>
+</html>
