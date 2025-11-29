@@ -69,7 +69,7 @@
             // 加载仪表盘数据
             function loadDashboardData() {
                 try {
-                    // 添加用户提供的15名学生信息
+                    // 添加用户提供的18名学生信息
                     const studentList = [
                         { studentId: '17252404', userName: '胡昊杨' },
                         { studentId: '17250514', userName: '冒鈺城' },
@@ -85,23 +85,33 @@
                         { studentId: '17255893', userName: '赵雅星' },
                         { studentId: '17253344', userName: '唐于杰' },
                         { studentId: '17253299', userName: '何剑飞' },
-                        { studentId: '17254248', userName: '周宇翔' }
+                        { studentId: '17254248', userName: '周宇翔' },
+                        { studentId: '17252415', userName: '王嘉懿' },
+                        { studentId: '17254593', userName: '王家豪' },
+                        { studentId: '17250525', userName: '张曼歆' }
                     ];
                     
-                    // 获取现有记录
+                    // 获取现有记录并清空所有碳足迹数据
                     let userRecords = JSON.parse(localStorage.getItem('userRecords') || '[]');
+                    // 将现有记录的排放量和节省量设为0
+                    userRecords = userRecords.map(record => ({
+                        ...record,
+                        option1Emission: '0',
+                        option2Emission: 0,
+                        totalEmission: 0,
+                        savings: 0
+                    }));
+                    
                     const existingStudentIds = new Set(userRecords.map(record => record.studentId));
                     
                     // 为每个学生创建记录
                     studentList.forEach(student => {
                         if (!existingStudentIds.has(student.studentId)) {
-                            // 为每个学生创建2-3条随机记录
+                            // 为每个学生创建2-3条随机记录，排放量设为0
                             const recordCount = Math.floor(Math.random() * 2) + 2;
                             for (let i = 0; i < recordCount; i++) {
                                 const now = new Date();
                                 const recordDate = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-                                const emission = (Math.random() * 15 + 5).toFixed(2);
-                                const savings = (Math.random() * 8).toFixed(2);
                                 
                                 userRecords.push({
                                     studentId: student.studentId,
@@ -109,12 +119,12 @@
                                     activityType: ['交通出行', '饮食消费', '日常生活'][Math.floor(Math.random() * 3)],
                                     option1: '选项1',
                                     option1Count: 1,
-                                    option1Emission: emission,
+                                    option1Emission: '0',
                                     option2: '',
                                     option2Count: 0,
                                     option2Emission: 0,
-                                    totalEmission: parseFloat(emission),
-                                    savings: parseFloat(savings),
+                                    totalEmission: 0,
+                                    savings: 0,
                                     timestamp: recordDate.toISOString()
                                 });
                             }
