@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量添加用户 - 碳足迹计算器</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2e7d32;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .btn-primary {
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .btn-primary:hover {
+            background-color: #1b5e20;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 4px;
+            background-color: #f5f5f5;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #4caf50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .user-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>批量添加学生用户</h1>
+        <p>点击下方按钮将15名学生用户添加到系统中。此操作将直接修改localStorage数据。</p>
+        <button id="addUsersBtn" class="btn-primary">添加所有用户</button>
+        <button id="clearUsersBtn" class="btn-primary">清除所有用户数据</button>
+        <div id="result"></div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        // 学生名单数据
+        const students = [
+            { name: "胡昊杨", studentId: "17252404" },
+            { name: "冒鈺城", studentId: "17250514" },
+            { name: "刘钊源", studentId: "17250082" },
+            { name: "刘彦钊", studentId: "17253321" },
+            { name: "张晨", studentId: "17253334" },
+            { name: "金扬颖", studentId: "15245793" },
+            { name: "张宇欣", studentId: "17255887" },
+            { name: "吕彦博", studentId: "17251502" },
+            { name: "谢浩然", studentId: "17251546" },
+            { name: "夏雨璨", studentId: "17251531" },
+            { name: "宁佳佳", studentId: "17255417" },
+            { name: "赵雅星", studentId: "17255893" },
+            { name: "唐于杰", studentId: "17253344" },
+            { name: "何剑飞", studentId: "17253299" },
+            { name: "周宇翔", studentId: "17254248" }
+        ];
+
+        // 结果显示函数
+        function showResult(message, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            const messageEl = document.createElement('div');
+            messageEl.className = type;
+            messageEl.textContent = message;
+            resultDiv.appendChild(messageEl);
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        }
+
+        // 批量添加用户函数
+        function addAllUsers() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            showResult('开始添加用户...');
+            
+            // 创建一个用户列表数组（如果不存在）
+            let allUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
+            let addedCount = 0;
+            
+            students.forEach((student, index) => {
+                setTimeout(() => {
+                    try {
+                        // 检查用户是否已存在
+                        const existingUser = allUsers.find(u => u.studentId === student.studentId);
+                        if (existingUser) {
+                            showResult(`用户 ${student.name} (${student.studentId}) 已存在，跳过添加`);
+                        } else {
+                            // 添加用户到列表
+                            allUsers.push({
+                                name: student.name,
+                                studentId: student.studentId,
+                                createdAt: new Date().toISOString()
+                            });
+                            addedCount++;
+                            
+                            // 同时创建对应的用户记录存储空间
+                            const userRecordsKey = `userRecords_${student.studentId}`;
+                            if (!localStorage.getItem(userRecordsKey)) {
+                                localStorage.setItem(userRecordsKey, JSON.stringify([]));
+                            }
+                            
+                            const userItem = document.createElement('div');
+                            userItem.className = 'user-item';
+                            userItem.textContent = `✅ 已添加: ${student.name} - ${student.studentId}`;
+                            resultDiv.appendChild(userItem);
+                            showResult(`已添加用户: ${student.name} (${student.studentId})`, 'success');
+                        }
+                    } catch (error) {
+                        showResult(`添加用户 ${student.name} 失败: ${error.message}`, 'error');
+                    }
+                    
+                    // 最后一个用户处理完成
+                    if (index === students.length - 1) {
+                        // 保存更新后的用户列表
+                        localStorage.setItem('allUsers', JSON.stringify(allUsers));
+                        showResult(`\n批量添加完成！总共添加了 ${addedCount} 个新用户。`, 'success');
+                    }
+                }, index * 100); // 间隔100ms添加一个用户，避免操作过快
+            });
+        }
+
+        // 清除所有用户数据函数
+        function clearAllUserData() {
+            if (confirm('确定要清除所有用户数据吗？此操作不可恢复！')) {
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = '';
+                
+                try {
+                    // 清除用户列表
+                    localStorage.removeItem('allUsers');
+                    
+                    // 清除所有用户记录
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key.startsWith('userRecords_')) {
+                            localStorage.removeItem(key);
+                        }
+                    }
+                    
+                    // 清除当前登录用户
+                    if (window.STORAGE_KEYS && window.STORAGE_KEYS.USER_INFO) {
+                        localStorage.removeItem(window.STORAGE_KEYS.USER_INFO);
+                    }
+                    
+                    showResult('已成功清除所有用户数据！', 'success');
+                } catch (error) {
+                    showResult(`清除用户数据失败: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // 绑定事件
+        document.getElementById('addUsersBtn').addEventListener('click', addAllUsers);
+        document.getElementById('clearUsersBtn').addEventListener('click', clearAllUserData);
+
+        // 显示当前已存在的用户数量
+        function showExistingUsers() {
+            const allUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
+            showResult(`当前系统中已有 ${allUsers.length} 个用户`);
+        }
+
+        // 页面加载时显示现有用户数量
+        showExistingUsers();
+    </script>
+</body>
+</html>
