@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试页面索引</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        .test-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .test-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        .test-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .test-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .test-card .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 10px;
+        }
+        .badge.recommended {
+            background: #28a745;
+            color: white;
+        }
+        .badge.debug {
+            background: #17a2b8;
+            color: white;
+        }
+        .badge.minimal {
+            background: #ffc107;
+            color: #333;
+        }
+        .test-card a {
+            display: block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .test-card a:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            padding: 12px 30px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 25px;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        .back-link a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 测试页面集合</h1>
+        
+        <div class="test-grid">
+            <div class="test-card">
+                <h3>✨ 修复版计算器</h3>
+                <span class="badge recommended">推荐</span>
+                <span class="badge">100%可用</span>
+                <p>完全重构的计算器版本，所有代码内联在HTML中，零外部依赖，确保功能100%可用。包含详细的调试信息。</p>
+                <a href="calculator-fixed.html" target="_blank">打开页面 →</a>
+            </div>
+            
+            <div class="test-card">
+                <h3>🚗 交通方式测试器</h3>
+                <span class="badge recommended">推荐</span>
+                <span class="badge">美观易用</span>
+                <p>专注于交通方式碳足迹计算的独立测试器，界面美观简洁，使用体验极佳。</p>
+                <a href="test-transport.html" target="_blank">打开页面 →</a>
+            </div>
+            
+            <div class="test-card">
+                <h3>🔧 诊断页面</h3>
+                <span class="badge debug">调试工具</span>
+                <p>检测所有JS文件加载状态，实时显示控制台日志，一键测试计算功能，提供详细错误报告。</p>
+                <a href="diagnostic.html" target="_blank">打开页面 →</a>
+            </div>
+            
+            <div class="test-card">
+                <h3>🧮 最小化测试</h3>
+                <span class="badge minimal">简化版</span>
+                <p>超简化版本的计算器，用于基础功能测试和调试。</p>
+                <a href="test-minimal.html" target="_blank">打开页面 →</a>
+            </div>
+            
+            <div class="test-card">
+                <h3>📝 简单测试</h3>
+                <span class="badge minimal">基础版</span>
+                <p>简化的计算器实现，用于功能验证和快速调试。</p>
+                <a href="test-simple.html" target="_blank">打开页面 →</a>
+            </div>
+            
+            <div class="test-card">
+                <h3>🐛 调试版计算器</h3>
+                <span class="badge debug">详细日志</span>
+                <p>带有详细调试日志的计算器版本，每一步操作都会在控制台输出。</p>
+                <a href="test-calculator-debug.html" target="_blank">打开页面 →</a>
+            </div>
+        </div>
+        
+        <div class="back-link">
+            <a href="../calculator.html">← 返回正式版计算器</a>
+        </div>
+    </div>
+    
+    <script>
+        console.log('测试页面索引已加载');
+        console.log('当前可用测试页面：');
+        console.log('1. calculator-fixed.html - 修复版计算器（推荐）');
+        console.log('2. test-transport.html - 交通方式测试器');
+        console.log('3. diagnostic.html - 诊断工具');
+        console.log('4. test-minimal.html - 最小化测试');
+        console.log('5. test-simple.html - 简单测试');
+        console.log('6. test-calculator-debug.html - 调试版');
+    </script>
+</body>
+</html>

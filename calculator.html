@@ -5,7 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>碳足迹计算 - 25-10矿大能动</title>
     <link rel="stylesheet" href="css/styles.css">
-    <!-- 按顺序加载脚本 -->
+    
+    <!-- 内联关键脚本确保功能正常 -->
+    <script>
+        // 防止脚本加载失败导致功能不可用，提供内联备用实现
+        window.INLINE_MODE = false; // 默认使用外部脚本
+        
+        // 如果外部脚本加载失败，会自动切换到内联模式
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'SCRIPT') {
+                console.warn('外部脚本加载失败，准备使用内联备用方案');
+                window.INLINE_MODE = true;
+            }
+        }, true);
+    </script>
+    
+    <!-- 按顺序加载外部脚本 -->
     <script src="js/constants.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/footprint-calculator.js"></script>
@@ -49,7 +64,18 @@
                     <div class="form-group">
                         <label for="transport-type-1">交通方式</label>
                         <select id="transport-type-1" required>
-                            <!-- JavaScript 动态填充 -->
+                            <option value="walking">步行</option>
+                            <option value="cycling">骑自行车</option>
+                            <option value="subway">地铁/轻轨</option>
+                            <option value="bus">公交车</option>
+                            <option value="train">高铁/动车</option>
+                            <option value="motorcycle">摩托车</option>
+                            <option value="car_small">小型汽车(1.0-1.6L)</option>
+                            <option value="taxi">出租车</option>
+                            <option value="car_medium" selected>中型汽车(1.6-2.5L)</option>
+                            <option value="car_large">大型汽车/SUV(2.5L+)</option>
+                            <option value="plane_international">国际航班</option>
+                            <option value="plane_domestic">国内航班</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -64,7 +90,18 @@
                     <div class="form-group">
                         <label for="transport-type-2">交通方式</label>
                         <select id="transport-type-2" required>
-                            <!-- JavaScript 动态填充 -->
+                            <option value="walking">步行</option>
+                            <option value="cycling">骑自行车</option>
+                            <option value="subway" selected>地铁/轻轨</option>
+                            <option value="bus">公交车</option>
+                            <option value="train">高铁/动车</option>
+                            <option value="motorcycle">摩托车</option>
+                            <option value="car_small">小型汽车(1.0-1.6L)</option>
+                            <option value="taxi">出租车</option>
+                            <option value="car_medium">中型汽车(1.6-2.5L)</option>
+                            <option value="car_large">大型汽车/SUV(2.5L+)</option>
+                            <option value="plane_international">国际航班</option>
+                            <option value="plane_domestic">国内航班</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -76,7 +113,7 @@
         </div>
         
         <!-- 食品消费计算 -->
-        <div id="food-section" class="calculator-section">
+        <div id="food-section" class="calculator-section" style="display: none;">
             <div class="calculator-container">
                 <!-- 选项1 -->
                 <div class="calculator-card">
@@ -84,7 +121,19 @@
                     <div class="form-group">
                         <label for="food-type-1">食品类型</label>
                         <select id="food-type-1" required>
-                            <!-- JavaScript 动态填充 -->
+                            <option value="beef" selected>牛肉</option>
+                            <option value="lamb">羊肉</option>
+                            <option value="pork">猪肉</option>
+                            <option value="chicken">鸡肉</option>
+                            <option value="fish">鱼肉</option>
+                            <option value="eggs">鸡蛋</option>
+                            <option value="milk">牛奶</option>
+                            <option value="rice">米饭</option>
+                            <option value="wheat">小麦</option>
+                            <option value="tomato">番茄(露天)</option>
+                            <option value="lettuce">生菜(露天)</option>
+                            <option value="vegetables">蔬菜(平均)</option>
+                            <option value="fruits">水果(平均)</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -99,7 +148,19 @@
                     <div class="form-group">
                         <label for="food-type-2">食品类型</label>
                         <select id="food-type-2" required>
-                            <!-- JavaScript 动态填充 -->
+                            <option value="beef">牛肉</option>
+                            <option value="lamb">羊肉</option>
+                            <option value="pork">猪肉</option>
+                            <option value="chicken" selected>鸡肉</option>
+                            <option value="fish">鱼肉</option>
+                            <option value="eggs">鸡蛋</option>
+                            <option value="milk">牛奶</option>
+                            <option value="rice">米饭</option>
+                            <option value="wheat">小麦</option>
+                            <option value="tomato">番茄(露天)</option>
+                            <option value="lettuce">生菜(露天)</option>
+                            <option value="vegetables">蔬菜(平均)</option>
+                            <option value="fruits">水果(平均)</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -229,5 +290,153 @@
             <p>&copy; 2025 碳足迹计算器 - 25-10矿大能动</p>
         </div>
     </footer>
+    
+    <!-- 备用内联脚本 - 当外部脚本加载失败时启用 -->
+    <script>
+        // 延迟500ms检查外部脚本是否加载成功
+        setTimeout(function() {
+            // 如果Calculator类不存在，说明外部脚本加载失败，启用备用方案
+            if (typeof window.Calculator === 'undefined' || window.INLINE_MODE) {
+                console.warn('⚠️ 检测到外部脚本未加载，启用备用内联脚本');
+                
+                // 定义排放因子
+                const FACTORS = {
+                    transportation: {
+                        walking: 0, cycling: 0, bus: 0.089, subway: 0.041, taxi: 0.159,
+                        car_small: 0.122, car_medium: 0.172, car_large: 0.221,
+                        motorcycle: 0.091, train: 0.041, plane_domestic: 0.255, plane_international: 0.195
+                    },
+                    diet: {
+                        beef: 27.0, lamb: 24.5, pork: 12.0, chicken: 6.0, fish: 5.4,
+                        eggs: 4.8, milk: 3.0, rice: 3.0, wheat: 2.5, tomato: 1.75, lettuce: 0.75,
+                        broccoli: 2.8, carrot: 1.1, apple: 0.8, banana: 0.7, vegetables: 2.0, fruits: 1.1, grains: 2.7
+                    }
+                };
+                
+                const LABELS = {
+                    transportation: {
+                        walking: '步行', cycling: '骑自行车', bus: '公交车', subway: '地铁/轻轨',
+                        taxi: '出租车', car_small: '小型汽车(1.0-1.6L)', car_medium: '中型汽车(1.6-2.5L)',
+                        car_large: '大型汽车/SUV(2.5L+)', motorcycle: '摩托车', train: '高铁/动车',
+                        plane_domestic: '国内航班', plane_international: '国际航班'
+                    },
+                    diet: {
+                        beef: '牛肉', lamb: '羊肉', pork: '猪肉', chicken: '鸡肉', fish: '鱼肉',
+                        eggs: '鸡蛋', milk: '牛奶', rice: '米饭', wheat: '小麦', tomato: '番茄',
+                        lettuce: '生菜', vegetables: '蔬菜', fruits: '水果', grains: '谷物'
+                    }
+                };
+                
+                let currentTab = 'transport';
+                
+                // 绑定标签切换
+                const transportTab = document.getElementById('transport-tab');
+                const foodTab = document.getElementById('food-tab');
+                const transportSection = document.getElementById('transport-section');
+                const foodSection = document.getElementById('food-section');
+                
+                if (transportTab) {
+                    transportTab.addEventListener('click', function() {
+                        currentTab = 'transport';
+                        transportTab.classList.add('active');
+                        foodTab.classList.remove('active');
+                        transportSection.style.display = 'block';
+                        foodSection.style.display = 'none';
+                        document.getElementById('results-section').style.display = 'none';
+                    });
+                }
+                
+                if (foodTab) {
+                    foodTab.addEventListener('click', function() {
+                        currentTab = 'food';
+                        foodTab.classList.add('active');
+                        transportTab.classList.remove('active');
+                        foodSection.style.display = 'block';
+                        transportSection.style.display = 'none';
+                        document.getElementById('results-section').style.display = 'none';
+                    });
+                }
+                
+                // 绑定计算按钮
+                const calculateBtn = document.getElementById('calculate-btn');
+                if (calculateBtn) {
+                    console.log('✅ 备用脚本：绑定计算按钮');
+                    calculateBtn.addEventListener('click', function() {
+                        console.log('🔵 备用脚本：计算按钮被点击，当前标签:', currentTab);
+                        
+                        try {
+                            let type, item1, amount1, item2, amount2;
+                            
+                            if (currentTab === 'transport') {
+                                type = 'transportation';
+                                item1 = document.getElementById('transport-type-1').value;
+                                amount1 = parseFloat(document.getElementById('distance-1').value) || 0;
+                                item2 = document.getElementById('transport-type-2').value;
+                                amount2 = parseFloat(document.getElementById('distance-2').value) || 0;
+                            } else {
+                                type = 'diet';
+                                item1 = document.getElementById('food-type-1').value;
+                                amount1 = parseFloat(document.getElementById('food-amount-1').value) || 0;
+                                item2 = document.getElementById('food-type-2').value;
+                                amount2 = parseFloat(document.getElementById('food-amount-2').value) || 0;
+                            }
+                            
+                            const factor1 = FACTORS[type][item1];
+                            const factor2 = FACTORS[type][item2];
+                            const emission1 = amount1 * factor1;
+                            const emission2 = amount2 * factor2;
+                            const savings = Math.abs(emission1 - emission2);
+                            const trees = (savings / 21.77).toFixed(2);
+                            
+                            // 显示结果
+                            document.getElementById('option1-name').textContent = LABELS[type][item1];
+                            document.getElementById('option2-name').textContent = LABELS[type][item2];
+                            document.getElementById('option1-emission').textContent = emission1.toFixed(3) + ' kg CO₂e';
+                            document.getElementById('option2-emission').textContent = emission2.toFixed(3) + ' kg CO₂e';
+                            document.getElementById('carbon-saved').textContent = savings.toFixed(3) + ' kg CO₂e';
+                            document.getElementById('trees-saved').textContent = trees + ' 棵';
+                            
+                            // 生成建议
+                            const tips = [];
+                            if (currentTab === 'transport') {
+                                if (emission1 > 1 || emission2 > 1) {
+                                    tips.push('短途出行（5km以内）建议步行或骑自行车');
+                                    tips.push('中长途出行优先选择地铁、公交等公共交通');
+                                }
+                                if (emission1 > 2 || emission2 > 2) {
+                                    tips.push('如必须开车，尽量选择小排量车型并拼车');
+                                    tips.push('1000公里以内优先选择高铁，碳排放仅为飞机的1/6');
+                                }
+                                if (factor1 === 0 || factor2 === 0) {
+                                    tips.push('您已选择零碳出行方式，为保护地球做出了贡献！');
+                                }
+                            } else {
+                                if (item1 === 'beef' || item2 === 'beef') {
+                                    tips.push('牛肉的碳足迹非常高(27kg CO₂e/kg)，减少牛肉消费可显著降低碳排放');
+                                }
+                                tips.push('增加植物性食品比例，减少红肉消费');
+                                tips.push('选择本地生产的食物，减少运输碳足迹');
+                            }
+                            
+                            const tipsList = document.getElementById('reduction-tips');
+                            tipsList.innerHTML = tips.map(tip => '<li>' + tip + '</li>').join('');
+                            
+                            document.getElementById('results-section').style.display = 'block';
+                            document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            
+                            console.log('✅ 备用脚本：计算完成');
+                        } catch (error) {
+                            console.error('❌ 备用脚本计算出错:', error);
+                            alert('计算出错: ' + error.message);
+                        }
+                    });
+                } else {
+                    console.error('❌ 备用脚本：未找到计算按钮');
+                }
+            } else {
+                console.log('✅ 外部脚本加载成功，使用正常流程');
+            }
+        }, 500);
+    </script>
 </body>
 </html>
