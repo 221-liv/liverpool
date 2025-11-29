@@ -2,36 +2,45 @@
 
 class CarbonFootprintCalculator {
     constructor() {
-        // 定义排放因子（每单位活动的碳排放量，单位：kg CO₂e）
-        this.emissionFactors = {
+        // 使用constants.js中的排放因子，如果不存在则使用默认值
+        this.emissionFactors = window.EMISSION_FACTORS || {
             transportation: {
-                walking: 0,
-                cycling: 0,
-                bus: 0.089,
-                subway: 0.041,
-                taxi: 0.159,
-                car_small: 0.122,
-                car_medium: 0.172,
-                car_large: 0.221,
-                motorcycle: 0.091,
-                train: 0.035,
-                plane_domestic: 0.255,
-                plane_international: 0.195
+                walking: 0,           // 步行 - 零排放
+                cycling: 0,           // 骑自行车 - 零排放
+                bus: 0.089,          // 公交车
+                subway: 0.041,       // 地铁/轻轨
+                taxi: 0.159,         // 出租车
+                car_small: 0.122,    // 小型汽车(1.0-1.6L)
+                car_medium: 0.172,   // 中型汽车(1.6-2.5L)
+                car_large: 0.221,    // 大型汽车/SUV
+                motorcycle: 0.091,   // 摩托车
+                train: 0.041,        // 高铁/动车
+                plane_domestic: 0.255,      // 国内航班
+                plane_international: 0.195  // 国际航班
             },
             energy: {
-                electricity: 0.583,
-                natural_gas: 2.2,
-                coal: 3.5,
-                oil: 2.8
+                electricity: 0.610,
+                natural_gas: 2.16,
+                coal: 2.40,
+                gasoline: 2.31,
+                diesel: 2.68
             },
             diet: {
                 beef: 27.0,
+                lamb: 24.5,
                 pork: 12.0,
                 chicken: 6.0,
+                fish: 5.4,
                 eggs: 4.8,
                 milk: 3.0,
                 rice: 3.0,
                 wheat: 2.5,
+                tomato: 1.75,
+                lettuce: 0.75,
+                broccoli: 2.8,
+                carrot: 1.1,
+                apple: 0.8,
+                banana: 0.7,
                 vegetables: 2.0,
                 fruits: 1.1,
                 grains: 2.7
@@ -108,18 +117,18 @@ class CarbonFootprintCalculator {
     getActivityDescription(type, activity) {
         const descriptions = {
             transportation: {
-                walking: '步行是零碳排放的出行方式',
-                cycling: '骑自行车是环保的出行选择',
-                bus: '乘坐公交车比私家车更环保',
-                subway: '地铁是城市中最环保的公共交通之一',
-                taxi: '出租车碳排放较高',
-                car_small: '小型汽车的碳排放量相对较低',
-                car_medium: '中型汽车的碳排放量中等',
-                car_large: '大型汽车的碳排放量较高',
-                motorcycle: '摩托车的碳排放量相对较高',
-                train: '乘坐火车比飞机更环保',
-                plane_domestic: '国内航班的碳排放量较高',
-                plane_international: '国际航班的碳排放量较高'
+                walking: '步行是零碳排放的绿色出行方式,既健康又环保',
+                cycling: '骑自行车零排放,是最推荐的短距离出行方式',
+                bus: '公交车人均碳排放低,是环保的公共交通选择',
+                subway: '地铁效率高、排放低,是城市出行的最佳选择之一',
+                train: '高铁/动车电力驱动,长距离出行比飞机环保得多',
+                motorcycle: '摩托车虽然便捷,但碳排放相对较高',
+                taxi: '出租车空驶率高导致碳排放较大,建议拼车出行',
+                car_small: '小型汽车比大型车更节能,但仍建议优先公共交通',
+                car_medium: '中型汽车碳排放中等,建议拼车或选择新能源车',
+                car_large: '大型汽车/SUV碳排放最高,非必要不建议使用',
+                plane_domestic: '国内航班碳排放很高,中短距离建议改乘高铁',
+                plane_international: '国际航班虽不可避免,但可通过碳抵消方式减轻影响'
             },
             diet: {
                 beef: '牛肉的碳足迹非常高，主要来自肠道发酵和饲料生产',
@@ -151,12 +160,12 @@ class CarbonFootprintCalculator {
         }
         
         // 根据活动类型提供具体建议
-        if (activityType === 'transportation') {
+        if (activityType === 'transportation' || activityType === 'transport') {
             tips.push('尽可能选择步行或骑自行车进行短途出行');
             tips.push('使用公共交通工具，如公交车或地铁');
             tips.push('如果必须开车，考虑拼车或选择小型汽车');
             tips.push('对于长途旅行，考虑乘坐火车而非飞机');
-        } else if (activityType === 'diet') {
+        } else if (activityType === 'diet' || activityType === 'food') {
             tips.push('减少红肉（特别是牛肉）的消费频率');
             tips.push('增加植物性食品在饮食中的比例');
             tips.push('选择本地生产的食物，减少运输碳足迹');

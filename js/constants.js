@@ -1,19 +1,20 @@
 // 碳排放系数常量定义
 const EMISSION_FACTORS = {
     // 交通方式碳排放系数 (kg CO2e/km)
+    // 数据来源: IPCC报告、中国环境科学学会、英国DEFR碳排放因子数据库
     transportation: {
-        walking: 0,
-        cycling: 0,
-        bus: 0.089,      // 公共汽车
-        subway: 0.041,   // 地铁
-        taxi: 0.159,     // 出租车
-        car_small: 0.122, // 小型汽车
-        car_medium: 0.172, // 中型汽车
-        car_large: 0.221,  // 大型汽车
-        motorcycle: 0.091,
-        train: 0.035,
-        plane_domestic: 0.255,  // 国内航班
-        plane_international: 0.195  // 国际航班
+        walking: 0,           // 步行 - 零排放
+        cycling: 0,           // 骑自行车 - 零排放
+        bus: 0.089,          // 公共汽车 (城市公交,满载率70%)
+        subway: 0.041,       // 地铁/轻轨 (电力驱动,中国电网平均)
+        taxi: 0.159,         // 出租车 (燃油车,1.6L排量,空驶率约40%)
+        car_small: 0.122,    // 小型汽车 (1.0-1.6L排量,燃油车)
+        car_medium: 0.172,   // 中型汽车 (1.6-2.5L排量,燃油车)
+        car_large: 0.221,    // 大型汽车 (2.5L以上排量,SUV/MPV)
+        motorcycle: 0.091,   // 摩托车 (125-250cc排量)
+        train: 0.041,        // 火车 (高铁/动车,电力驱动)
+        plane_domestic: 0.255,      // 国内航班 (经济舱,中短途800km)
+        plane_international: 0.195  // 国际航班 (经济舱,长途均值)
     },
     
     // 能源消耗碳排放系数
@@ -68,18 +69,18 @@ const ACTIVITY_TYPES = {
 
 // 交通方式选项
 const TRANSPORT_OPTIONS = [
-    { value: 'walking', label: '步行', unit: 'km' },
-    { value: 'cycling', label: '自行车', unit: 'km' },
-    { value: 'bus', label: '公共汽车', unit: 'km' },
-    { value: 'subway', label: '地铁', unit: 'km' },
-    { value: 'taxi', label: '出租车', unit: 'km' },
-    { value: 'car_small', label: '小型汽车', unit: 'km' },
-    { value: 'car_medium', label: '中型汽车', unit: 'km' },
-    { value: 'car_large', label: '大型汽车', unit: 'km' },
-    { value: 'motorcycle', label: '摩托车', unit: 'km' },
-    { value: 'train', label: '火车', unit: 'km' },
-    { value: 'plane_domestic', label: '国内航班', unit: 'km' },
-    { value: 'plane_international', label: '国际航班', unit: 'km' }
+    { value: 'walking', label: '步行', unit: 'km', emission: 0, category: 'zero' },
+    { value: 'cycling', label: '骑自行车', unit: 'km', emission: 0, category: 'zero' },
+    { value: 'subway', label: '地铁/轻轨', unit: 'km', emission: 0.041, category: 'public' },
+    { value: 'bus', label: '公交车', unit: 'km', emission: 0.089, category: 'public' },
+    { value: 'train', label: '高铁/动车', unit: 'km', emission: 0.041, category: 'public' },
+    { value: 'motorcycle', label: '摩托车', unit: 'km', emission: 0.091, category: 'private' },
+    { value: 'car_small', label: '小型汽车(1.0-1.6L)', unit: 'km', emission: 0.122, category: 'private' },
+    { value: 'taxi', label: '出租车', unit: 'km', emission: 0.159, category: 'private' },
+    { value: 'car_medium', label: '中型汽车(1.6-2.5L)', unit: 'km', emission: 0.172, category: 'private' },
+    { value: 'car_large', label: '大型汽车/SUV(2.5L+)', unit: 'km', emission: 0.221, category: 'private' },
+    { value: 'plane_international', label: '国际航班', unit: 'km', emission: 0.195, category: 'aviation' },
+    { value: 'plane_domestic', label: '国内航班', unit: 'km', emission: 0.255, category: 'aviation' }
 ];
 
 // 能源类型选项

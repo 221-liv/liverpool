@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最小化计算器测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        button { padding: 10px 20px; background: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1b5e20; }
+        select, input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        .result { background: #e8f5e9; padding: 15px; margin-top: 20px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🌱 碳足迹计算器 - 最小化测试</h1>
+    
+    <div class="section">
+        <h2>选项1</h2>
+        <select id="food1">
+            <option value="beef">牛肉 (27 kg CO₂e/kg)</option>
+            <option value="pork">猪肉 (12 kg CO₂e/kg)</option>
+            <option value="chicken">鸡肉 (6 kg CO₂e/kg)</option>
+            <option value="eggs">鸡蛋 (4.8 kg CO₂e/kg)</option>
+            <option value="milk">牛奶 (3 kg CO₂e/kg)</option>
+            <option value="rice">米饭 (3 kg CO₂e/kg)</option>
+            <option value="tomato">番茄 (1.75 kg CO₂e/kg)</option>
+            <option value="lettuce">生菜 (0.75 kg CO₂e/kg)</option>
+        </select>
+        <input type="number" id="amount1" value="1" min="0" step="0.1"> kg
+    </div>
+    
+    <div class="section">
+        <h2>选项2</h2>
+        <select id="food2">
+            <option value="beef">牛肉 (27 kg CO₂e/kg)</option>
+            <option value="pork">猪肉 (12 kg CO₂e/kg)</option>
+            <option value="chicken" selected>鸡肉 (6 kg CO₂e/kg)</option>
+            <option value="eggs">鸡蛋 (4.8 kg CO₂e/kg)</option>
+            <option value="milk">牛奶 (3 kg CO₂e/kg)</option>
+            <option value="rice">米饭 (3 kg CO₂e/kg)</option>
+            <option value="tomato">番茄 (1.75 kg CO₂e/kg)</option>
+            <option value="lettuce">生菜 (0.75 kg CO₂e/kg)</option>
+        </select>
+        <input type="number" id="amount2" value="1" min="0" step="0.1"> kg
+    </div>
+    
+    <button onclick="calculate()">🧮 开始计算</button>
+    
+    <div id="result" class="result" style="display:none;"></div>
+    
+    <script>
+        // 排放因子
+        const emissions = {
+            beef: 27.0,
+            pork: 12.0,
+            chicken: 6.0,
+            eggs: 4.8,
+            milk: 3.0,
+            rice: 3.0,
+            tomato: 1.75,
+            lettuce: 0.75
+        };
+        
+        const labels = {
+            beef: '牛肉',
+            pork: '猪肉',
+            chicken: '鸡肉',
+            eggs: '鸡蛋',
+            milk: '牛奶',
+            rice: '米饭',
+            tomato: '番茄',
+            lettuce: '生菜'
+        };
+        
+        function calculate() {
+            const food1 = document.getElementById('food1').value;
+            const amount1 = parseFloat(document.getElementById('amount1').value);
+            const food2 = document.getElementById('food2').value;
+            const amount2 = parseFloat(document.getElementById('amount2').value);
+            
+            const emission1 = emissions[food1] * amount1;
+            const emission2 = emissions[food2] * amount2;
+            const savings = Math.abs(emission1 - emission2);
+            const trees = (savings / 21.77).toFixed(2);
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <h2>📊 计算结果</h2>
+                <p><strong>${labels[food1]} ${amount1}kg:</strong> ${emission1.toFixed(2)} kg CO₂e</p>
+                <p><strong>${labels[food2]} ${amount2}kg:</strong> ${emission2.toFixed(2)} kg CO₂e</p>
+                <p><strong>碳减排量:</strong> ${savings.toFixed(2)} kg CO₂e</p>
+                <p><strong>相当于种植:</strong> ${trees} 棵树</p>
+                
+                ${(food1 === 'beef' || food2 === 'beef') ? `
+                <div style="background: #fff3e0; padding: 15px; margin-top: 15px; border-radius: 4px;">
+                    <h3>🐄 牛肉碳足迹构成</h3>
+                    <p>牛肉的高碳足迹主要来自:</p>
+                    <ul>
+                        <li>肠道发酵 (40%) - 甲烷排放</li>
+                        <li>饲料生产 (26%) - 土地和水资源消耗</li>
+                        <li>粪便管理 (10%)</li>
+                        <li>其他 (24%) - 能源、运输等</li>
+                    </ul>
+                    <p><strong>💡 减排建议:</strong> 每周少吃一次牛肉可减少约27kg碳排放</p>
+                </div>
+                ` : ''}
+            `;
+            
+            console.log('计算完成:', { food1, amount1, emission1, food2, amount2, emission2, savings });
+        }
+    </script>
+</body>
+</html>

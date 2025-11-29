@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>简单计算测试</title>
+</head>
+<body>
+    <h1>简单计算测试</h1>
+    <div id="output"></div>
+    
+    <script src="js/constants.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/footprint-calculator.js"></script>
+    
+    <script>
+        const output = document.getElementById('output');
+        let log = '';
+        
+        // 测试1: 检查常量
+        log += '<h2>测试1: 常量检查</h2>';
+        log += '<p>EMISSION_FACTORS 存在: ' + (!!window.EMISSION_FACTORS) + '</p>';
+        log += '<p>牛肉排放因子: ' + (window.EMISSION_FACTORS?.diet?.beef || '未定义') + ' kg CO₂e/kg</p>';
+        log += '<p>鸡肉排放因子: ' + (window.EMISSION_FACTORS?.diet?.chicken || '未定义') + ' kg CO₂e/kg</p>';
+        log += '<p>番茄排放因子: ' + (window.EMISSION_FACTORS?.diet?.tomato || '未定义') + ' kg CO₂e/kg</p>';
+        
+        // 测试2: 检查计算器
+        log += '<h2>测试2: 计算器检查</h2>';
+        log += '<p>carbonCalculator 存在: ' + (!!window.carbonCalculator) + '</p>';
+        
+        if (window.carbonCalculator) {
+            log += '<p>carbonCalculator 类型: ' + typeof window.carbonCalculator + '</p>';
+            log += '<p>compareEmissions 方法存在: ' + (typeof window.carbonCalculator.compareEmissions === 'function') + '</p>';
+            
+            // 测试3: 执行计算
+            log += '<h2>测试3: 执行计算</h2>';
+            try {
+                const option1 = { type: 'diet', item: 'beef', amount: 1 };
+                const option2 = { type: 'diet', item: 'chicken', amount: 1 };
+                
+                const result = window.carbonCalculator.compareEmissions(option1, option2);
+                
+                log += '<p style="color: green;">✅ 计算成功！</p>';
+                log += '<pre>';
+                log += '选项1 (牛肉): ' + result.option1.emission.toFixed(2) + ' kg CO₂e\n';
+                log += '选项2 (鸡肉): ' + result.option2.emission.toFixed(2) + ' kg CO₂e\n';
+                log += '减排量: ' + result.savings.toFixed(2) + ' kg CO₂e\n';
+                log += '</pre>';
+                
+                // 测试4: 计算树木
+                const trees = window.carbonCalculator.calculateEquivalentTrees(result.savings);
+                log += '<p>相当于种植 ' + trees.toFixed(2) + ' 棵树</p>';
+                
+            } catch (error) {
+                log += '<p style="color: red;">❌ 计算失败: ' + error.message + '</p>';
+                log += '<pre>' + error.stack + '</pre>';
+            }
+        }
+        
+        output.innerHTML = log;
+    </script>
+</body>
+</html>

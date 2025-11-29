@@ -50,7 +50,7 @@ function createFallbackCalculator() {
                         car_medium: 0.172,
                         car_large: 0.221,
                         motorcycle: 0.091,
-                        train: 0.035,
+                        train: 0.041,          // 修正为0.041(高铁/动车)
                         plane_domestic: 0.255,
                         plane_international: 0.195
                     },
@@ -226,10 +226,18 @@ class Calculator {
 
     // 设置事件监听器
     setupEventListeners() {
+        console.log('设置事件监听器...');
+        
         // 计算按钮事件
         const calculateBtn = document.getElementById('calculate-btn');
         if (calculateBtn) {
-            calculateBtn.addEventListener('click', this.handleCalculate.bind(this));
+            console.log('找到计算按钮，绑定点击事件');
+            calculateBtn.addEventListener('click', () => {
+                console.log('计算按钮被点击，当前标签:', this.currentTab);
+                this.handleCalculate();
+            });
+        } else {
+            console.error('未找到计算按钮 #calculate-btn');
         }
 
         // 保存记录按钮事件
@@ -241,19 +249,19 @@ class Calculator {
         // 监听食品类型变化，显示牛肉碳足迹构成分析
         const foodType1 = document.getElementById('food-type-1');
         const foodType2 = document.getElementById('food-type-2');
-        const beefBreakdown = document.getElementById('beef-breakdown');
 
-        if (foodType1 && foodType2 && beefBreakdown) {
-            const showBeefBreakdown = () => {
-                const show = (foodType1.value === 'beef' || foodType2.value === 'beef');
-                beefBreakdown.style.display = show ? 'block' : 'none';
-                if (show) {
+        if (foodType1 && foodType2) {
+            const checkBeef = () => {
+                const hasBeef = foodType1.value === 'beef' || foodType2.value === 'beef';
+                const beefBreakdown = document.getElementById('beef-breakdown');
+                if (beefBreakdown && hasBeef) {
+                    beefBreakdown.style.display = 'block';
                     this.showBeefBreakdown();
                 }
             };
 
-            foodType1.addEventListener('change', showBeefBreakdown);
-            foodType2.addEventListener('change', showBeefBreakdown);
+            foodType1.addEventListener('change', checkBeef);
+            foodType2.addEventListener('change', checkBeef);
         }
     }
 
@@ -319,54 +327,64 @@ class Calculator {
 
 // 扩展Calculator类的原型方法
 Calculator.prototype.handleCalculate = function() {
+    console.log('===== 开始计算 =====');
+    console.log('当前标签:', this.currentTab);
+    
     // 创建降级计算器实现
-    const createFallbackCalculator = () => ({
-        compareEmissions: function(option1, option2) {
-            // 使用常量中的排放系数进行计算
-            const getEmissionFactor = (type, item) => {
-                if (type === 'transportation') {
-                    return window.EMISSION_FACTORS?.transportation?.[item] || 0.1;
-                } else if (type === 'diet') {
-                    return window.EMISSION_FACTORS?.diet?.[item] || 1.0;
+    const createFallbackCalculator = () => {
+        console.log('使用降级计算器');
+        return {
+            compareEmissions: function(option1, option2) {
+                // 使用常量中的排放系数进行计算
+                const getEmissionFactor = (type, item) => {
+                    if (type === 'transportation') {
+                        return window.EMISSION_FACTORS?.transportation?.[item] || 0.1;
+                    } else if (type === 'diet') {
+                        return window.EMISSION_FACTORS?.diet?.[item] || 1.0;
+                    }
+                    return 0.1;
+                };
+
+                const emission1 = option1.amount * getEmissionFactor(option1.type, option1.item);
+                const emission2 = option2.amount * getEmissionFactor(option2.type, option2.item);
+
+                return {
+                    option1: { ...option1, emission: emission1 },
+                    option2: { ...option2, emission: emission2 },
+                    difference: Math.abs(emission1 - emission2),
+                    savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
+                    lowerOption: emission1 < emission2 ? 'option1' : 'option2'
+                };
+            },
+            getCarbonReductionTips: function(carbonAmount, activityType) {
+                const tips = [];
+                if (carbonAmount > 10) {
+                    tips.push('选择更环保的选项可以显著减少碳排放');
+                    tips.push('考虑使用公共交通或植物性食品');
+                } else {
+                    tips.push('您的选择已经很环保，继续保持！');
                 }
-                return 0.1;
-            };
-
-            const emission1 = option1.amount * getEmissionFactor(option1.type, option1.item);
-            const emission2 = option2.amount * getEmissionFactor(option2.type, option2.item);
-
-            return {
-                option1: { ...option1, emission: emission1 },
-                option2: { ...option2, emission: emission2 },
-                difference: Math.abs(emission1 - emission2),
-                savings: Math.max(emission1, emission2) - Math.min(emission1, emission2),
-                lowerOption: emission1 < emission2 ? 'option1' : 'option2'
-            };
-        },
-        getCarbonReductionTips: function(carbonAmount) {
-            const tips = [];
-            if (carbonAmount > 10) {
-                tips.push('选择更环保的选项可以显著减少碳排放');
-                tips.push('考虑使用公共交通或植物性食品');
-            } else {
-                tips.push('您的选择已经很环保，继续保持！');
+                return tips;
+            },
+            calculateEquivalentTrees: function(carbonAmount) {
+                return carbonAmount / 21.77; // 一棵树一年吸收约21.77公斤CO2
             }
-            return tips;
-        },
-        calculateEquivalentTrees: function(carbonAmount) {
-            return carbonAmount / 21.77; // 一棵树一年吸收约21.77公斤CO2
-        }
-    });
+        };
+    };
     
     try {
         let option1, option2;
 
         if (this.currentTab === 'transport') {
+            console.log('处理交通方式计算');
             // 获取交通方式计算数据
             const transportType1 = document.getElementById('transport-type-1')?.value;
             const distance1 = parseFloat(document.getElementById('distance-1')?.value) || 0;
             const transportType2 = document.getElementById('transport-type-2')?.value;
             const distance2 = parseFloat(document.getElementById('distance-2')?.value) || 0;
+
+            console.log('交通选项1:', transportType1, distance1);
+            console.log('交通选项2:', transportType2, distance2);
 
             option1 = {
                 type: 'transportation',
@@ -380,11 +398,15 @@ Calculator.prototype.handleCalculate = function() {
                 amount: distance2
             };
         } else {
+            console.log('处理食品消费计算');
             // 获取食品消费计算数据
             const foodType1 = document.getElementById('food-type-1')?.value;
             const foodAmount1 = parseFloat(document.getElementById('food-amount-1')?.value) || 0;
             const foodType2 = document.getElementById('food-type-2')?.value;
             const foodAmount2 = parseFloat(document.getElementById('food-amount-2')?.value) || 0;
+
+            console.log('食品选项1:', foodType1, foodAmount1);
+            console.log('食品选项2:', foodType2, foodAmount2);
 
             option1 = {
                 type: 'diet',
@@ -403,7 +425,9 @@ Calculator.prototype.handleCalculate = function() {
         let comparisonResult;
         try {
             const calculator = window.carbonCalculator || createFallbackCalculator();
+            console.log('使用计算器:', calculator ? '主计算器' : '降级计算器');
             comparisonResult = calculator.compareEmissions(option1, option2);
+            console.log('计算结果:', comparisonResult);
         } catch (calcError) {
             console.warn('主要计算方法失败，使用降级方案:', calcError);
             // 使用全局的降级计算器实现
@@ -411,24 +435,28 @@ Calculator.prototype.handleCalculate = function() {
         }
         
         // 显示结果
+        console.log('准备显示结果');
         this.displayComparisonResults(comparisonResult);
+        console.log('===== 计算完成 =====');
 
     } catch (error) {
         console.error('计算过程中出错:', error);
+        console.error('错误堆栈:', error.stack);
         // 使用降级计算函数作为最后的备用方案
         try {
             const resultsSection = document.getElementById('results-section');
             if (resultsSection) {
                 resultsSection.style.display = 'block';
                 resultsSection.innerHTML = `
-                    <div class="fallback-message">
-                        <h3>降级模式已启用</h3>
-                        <p>计算器正在使用备用功能，请刷新页面或检查您的网络连接。</p>
+                    <div class="fallback-message" style="background: #ffebee; padding: 20px; border-radius: 8px;">
+                        <h3 style="color: #c62828;">计算出现错误</h3>
+                        <p>错误信息: ${error.message}</p>
+                        <p>请刷新页面重试，或查看控制台了解详情。</p>
                     </div>
                 `;
             }
         } catch (fallbackError) {
-            alert('计算过程中出现错误，请稍后重试。');
+            alert('计算过程中出现错误: ' + error.message);
         }
     }
 };
@@ -627,16 +655,16 @@ function ensureConstantsDefined() {
         window.TRANSPORT_OPTIONS = [
             { value: 'walking', label: '步行' },
             { value: 'cycling', label: '骑自行车' },
+            { value: 'subway', label: '地铁/轻轨' },
             { value: 'bus', label: '公交车' },
-            { value: 'subway', label: '地铁' },
-            { value: 'taxi', label: '出租车' },
-            { value: 'car_small', label: '小型汽车' },
-            { value: 'car_medium', label: '中型汽车' },
-            { value: 'car_large', label: '大型汽车' },
+            { value: 'train', label: '高铁/动车' },
             { value: 'motorcycle', label: '摩托车' },
-            { value: 'train', label: '火车' },
-            { value: 'plane_domestic', label: '国内航班' },
-            { value: 'plane_international', label: '国际航班' }
+            { value: 'car_small', label: '小型汽车(1.0-1.6L)' },
+            { value: 'taxi', label: '出租车' },
+            { value: 'car_medium', label: '中型汽车(1.6-2.5L)' },
+            { value: 'car_large', label: '大型汽车/SUV(2.5L+)' },
+            { value: 'plane_international', label: '国际航班' },
+            { value: 'plane_domestic', label: '国内航班' }
         ];
     }
 
@@ -669,7 +697,7 @@ function ensureConstantsDefined() {
                 car_medium: 0.172,
                 car_large: 0.221,
                 motorcycle: 0.091,
-                train: 0.035,
+                train: 0.041,          // 修正为0.041(高铁/动车)
                 plane_domestic: 0.255,
                 plane_international: 0.195
             },

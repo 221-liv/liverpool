@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计算器调试测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>碳足迹计算器调试测试</h1>
+    
+    <div class="test-section">
+        <h2>测试1: 检查文件加载</h2>
+        <div id="test1-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试2: 检查全局对象</h2>
+        <div id="test2-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试3: 测试计算功能</h2>
+        <button onclick="testCalculation()">运行计算测试</button>
+        <div id="test3-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>控制台日志</h2>
+        <div id="console-log" style="background: #f5f5f5; padding: 10px; max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <script src="js/constants.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/footprint-calculator.js"></script>
+    <script src="js/main.js"></script>
+    
+    <script>
+        // 捕获控制台输出
+        const consoleLog = document.getElementById('console-log');
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            consoleLog.innerHTML += '<div style="color: blue;">[LOG] ' + args.join(' ') + '</div>';
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            consoleLog.innerHTML += '<div style="color: red;">[ERROR] ' + args.join(' ') + '</div>';
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        };
+        
+        // 测试1: 检查文件加载
+        function test1() {
+            const result = document.getElementById('test1-result');
+            let html = '';
+            
+            html += window.EMISSION_FACTORS ? '✅ EMISSION_FACTORS 已加载<br>' : '❌ EMISSION_FACTORS 未加载<br>';
+            html += window.TRANSPORT_OPTIONS ? '✅ TRANSPORT_OPTIONS 已加载<br>' : '❌ TRANSPORT_OPTIONS 未加载<br>';
+            html += window.DIET_OPTIONS ? '✅ DIET_OPTIONS 已加载<br>' : '❌ DIET_OPTIONS 未加载<br>';
+            html += window.utils ? '✅ utils 已加载<br>' : '❌ utils 未加载<br>';
+            html += window.carbonCalculator ? '✅ carbonCalculator 已加载<br>' : '❌ carbonCalculator 未加载<br>';
+            
+            result.innerHTML = html;
+        }
+        
+        // 测试2: 检查全局对象
+        function test2() {
+            const result = document.getElementById('test2-result');
+            let html = '<pre>';
+            
+            if (window.EMISSION_FACTORS) {
+                html += 'EMISSION_FACTORS.diet.beef = ' + window.EMISSION_FACTORS.diet.beef + ' kg CO₂e/kg\n';
+                html += 'EMISSION_FACTORS.diet.chicken = ' + window.EMISSION_FACTORS.diet.chicken + ' kg CO₂e/kg\n';
+                html += 'EMISSION_FACTORS.diet.tomato = ' + window.EMISSION_FACTORS.diet.tomato + ' kg CO₂e/kg\n';
+            }
+            
+            if (window.DIET_OPTIONS) {
+                html += '\nDIET_OPTIONS 数量: ' + window.DIET_OPTIONS.length + '\n';
+                html += 'DIET_OPTIONS: ' + window.DIET_OPTIONS.map(o => o.label).join(', ') + '\n';
+            }
+            
+            html += '</pre>';
+            result.innerHTML = html;
+        }
+        
+        // 测试3: 测试计算功能
+        function testCalculation() {
+            const result = document.getElementById('test3-result');
+            result.innerHTML = '<p>正在测试...</p>';
+            
+            try {
+                const calculator = window.carbonCalculator;
+                
+                if (!calculator) {
+                    result.innerHTML = '<p class="error">❌ carbonCalculator 不存在</p>';
+                    return;
+                }
+                
+                // 测试计算
+                const option1 = { type: 'diet', item: 'beef', amount: 1 };
+                const option2 = { type: 'diet', item: 'chicken', amount: 1 };
+                
+                const comparisonResult = calculator.compareEmissions(option1, option2);
+                
+                let html = '<div class="success">✅ 计算成功！</div>';
+                html += '<pre>';
+                html += '牛肉 1kg: ' + comparisonResult.option1.emission.toFixed(2) + ' kg CO₂e\n';
+                html += '鸡肉 1kg: ' + comparisonResult.option2.emission.toFixed(2) + ' kg CO₂e\n';
+                html += '减排量: ' + comparisonResult.savings.toFixed(2) + ' kg CO₂e\n';
+                html += '相当于种树: ' + calculator.calculateEquivalentTrees(comparisonResult.savings).toFixed(2) + ' 棵\n';
+                html += '</pre>';
+                
+                result.innerHTML = html;
+            } catch (error) {
+                result.innerHTML = '<p class="error">❌ 计算失败: ' + error.message + '</p>';
+                console.error('计算测试失败:', error);
+            }
+        }
+        
+        // 页面加载后运行测试
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                test1();
+                test2();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
