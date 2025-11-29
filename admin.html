@@ -271,12 +271,12 @@
                             escapeCSV(record.activityType === 'transportation' ? '交通' : '食品'),
                             escapeCSV(record.option1Label || ''),
                             escapeCSV(record.option1Amount || 0),
-                            escapeCSV(record.option1Emission ? record.option1Emission.toFixed(3) : '0.000'),
+                            escapeCSV(record.option1Emission ? parseFloat(record.option1Emission).toFixed(3) : '0.000'),
                             escapeCSV(record.option2Label || ''),
                             escapeCSV(record.option2Amount || 0),
-                            escapeCSV(record.option2Emission ? record.option2Emission.toFixed(3) : '0.000'),
-                            escapeCSV(record.totalEmission ? record.totalEmission.toFixed(3) : '0.000'),
-                            escapeCSV(record.savings ? record.savings.toFixed(3) : '0.000')
+                            escapeCSV(record.option2Emission ? parseFloat(record.option2Emission).toFixed(3) : '0.000'),
+                            escapeCSV(record.totalEmission ? parseFloat(record.totalEmission).toFixed(3) : '0.000'),
+                            escapeCSV(record.savings ? parseFloat(record.savings).toFixed(3) : '0.000')
                         ];
                         
                         csv += row.join(',') + '\n';
