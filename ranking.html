@@ -104,69 +104,7 @@
                     localStorage.setItem('userRecords', JSON.stringify(userRecords));
                 }
                 
-                // 按学生ID分组并计算累计排放
-                const studentEmissions = {};
-                
-                userRecords.forEach(record => {
-                    if (!studentEmissions[record.studentId]) {
-                        studentEmissions[record.studentId] = {
-                            studentId: record.studentId,
-                            userName: record.userName,
-                            totalEmission: 0,
-                            totalSavings: 0,
-                            recordCount: 0
-                        };
-                    }
-                    
-                    // 将option1Emission转换为数字类型
-                    const option1Emission = parseFloat(record.option1Emission);
-                    
-                    studentEmissions[record.studentId].totalEmission += option1Emission + record.option2Emission;
-                    studentEmissions[record.studentId].totalSavings += record.savings;
-                    studentEmissions[record.studentId].recordCount += 1;
-                });
-                
-                // 转换为数组并按总排放量排序（升序）
-                const rankingArray = Object.values(studentEmissions)
-                    .sort((a, b) => a.totalEmission - b.totalEmission);
-                
-                // 更新班级统计信息
-                const classSize = rankingArray.length;
-                const classAverage = classSize > 0 ? 
-                    rankingArray.reduce((sum, item) => sum + item.totalEmission, 0) / classSize : 0;
-                
-                document.getElementById('class-stats-size').textContent = classSize;
-                document.getElementById('class-stats-average').textContent = classAverage.toFixed(2) + ' kg';
-                
-                // 显示排名列表
-                const rankingList = document.getElementById('ranking-list');
-                rankingList.innerHTML = '';
-                
-                rankingArray.forEach((student, index) => {
-                    const rankItem = document.createElement('div');
-                    rankItem.className = 'ranking-item';
-                    
-                    // 排名图标
-                    let rankIcon = '🏅';
-                    if (index === 0) rankIcon = '🥇';
-                    else if (index === 1) rankIcon = '🥈';
-                    else if (index === 2) rankIcon = '🥉';
-                    
-                    rankItem.innerHTML = `
-                        <div class="ranking-rank">${index + 1} ${rankIcon}</div>
-                        <div class="ranking-student">
-                            <div class="student-name">${student.userName}</div>
-                            <div class="student-id">${student.studentId}</div>
-                        </div>
-                        <div class="ranking-emission">${student.totalEmission.toFixed(2)} kg</div>
-                        <div class="ranking-savings">${student.totalSavings.toFixed(2)} kg</div>
-                        <div class="ranking-records">${student.recordCount} 条</div>
-                    `;
-                    
-                    rankingList.appendChild(rankItem);
-                });
-                
-                console.log('✅ 排名数据加载完成');
+                console.log('✅ 数据加载完成');
             } catch (error) {
                 console.error('❌ 加载排名数据失败:', error);
             }
@@ -223,29 +161,10 @@
     </nav>
 
     <main class="container">
-        <h2>班级碳足迹排名</h2>
-        <p>查看班级同学的碳足迹排名情况，共同进步，共建低碳班级</p>
+        <h2>班级碳足迹</h2>
+        <p>查看班级同学的碳足迹情况，共同进步，共建低碳班级</p>
         
-        <!-- 班级统计信息 -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="class-stats-size">0</div>
-                <div class="stat-label">班级人数</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="class-stats-average">0 kg</div>
-                <div class="stat-label">班级平均排放</div>
-            </div>
-        </div>
-        
-        <!-- 排名列表 -->
-        <div class="ranking-container">
-            <h3>碳足迹排行榜</h3>
-            <p>注：排名基于累计碳足迹总量，数值越低排名越靠前</p>
-            <div id="ranking-list">
-                <!-- JavaScript 动态填充 -->
-            </div>
-        </div>
+
         
         <!-- 环保倡议 -->
         <div class="calculator-card" style="margin-top: 30px;">
