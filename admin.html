@@ -91,43 +91,52 @@
                         { studentId: '17250525', userName: '张曼歆' }
                     ];
                     
-                    // 获取现有记录并清空所有碳足迹数据
-                    let userRecords = JSON.parse(localStorage.getItem('userRecords') || '[]');
-                    // 将现有记录的排放量和节省量设为0
-                    userRecords = userRecords.map(record => ({
-                        ...record,
-                        option1Emission: '0',
-                        option2Emission: 0,
-                        totalEmission: 0,
-                        savings: 0
-                    }));
+                    // Excel表格数据
+                    const excelData = [
+                        { studentId: '17252404', userName: '胡昊杨', option1: '步行', option1Emission: 3.33, option2: '食品消费', option2Emission: 0, savings: 3.33 },
+                        { studentId: '17250514', userName: '冒鈺城', option1: '步行', option1Emission: 2.06, option2: '食品消费', option2Emission: 0, savings: 2.06 },
+                        { studentId: '17250082', userName: '刘钊源', option1: '步行', option1Emission: 4.69, option2: '食品消费', option2Emission: 4.8, savings: 0.11 },
+                        { studentId: '17253321', userName: '刘彦钊', option1: '步行', option1Emission: 4.16, option2: '食品消费', option2Emission: 0, savings: 4.16 },
+                        { studentId: '17253334', userName: '张晨', option1: '步行', option1Emission: 4.16, option2: '食品消费', option2Emission: 0, savings: 4.16 },
+                        { studentId: '15245793', userName: '金扬颖', option1: '步行', option1Emission: 0, option2: '食品消费', option2Emission: 135, savings: 135 },
+                        { studentId: '17255887', userName: '张宇欣', option1: '步行', option1Emission: 4.894, option2: '食品消费', option2Emission: 0, savings: 4.894 },
+                        { studentId: '17251502', userName: '吕彦博', option1: '步行', option1Emission: 4.894, option2: '食品消费', option2Emission: 0, savings: 4.894 },
+                        { studentId: '17251546', userName: '谢浩然', option1: '步行', option1Emission: 3.274, option2: '食品消费', option2Emission: 0, savings: 3.274 },
+                        { studentId: '17251531', userName: '夏雨璨', option1: '步行', option1Emission: 2.062, option2: '食品消费', option2Emission: 0, savings: 2.062 },
+                        { studentId: '17255417', userName: '宁佳佳', option1: '步行', option1Emission: 3.66, option2: '食品消费', option2Emission: 0, savings: 3.66 },
+                        { studentId: '17255893', userName: '赵雅星', option1: '步行', option1Emission: 2.54, option2: '食品消费', option2Emission: 0, savings: 2.54 },
+                        { studentId: '17253344', userName: '唐于杰', option1: '步行', option1Emission: 3.75, option2: '食品消费', option2Emission: 0.6, savings: 3.15 },
+                        { studentId: '17253299', userName: '何剑飞', option1: '步行', option1Emission: 3.72, option2: '食品消费', option2Emission: 0, savings: 3.72 },
+                        { studentId: '17254248', userName: '周宇翔', option1: '步行', option1Emission: 3.41, option2: '食品消费', option2Emission: 0, savings: 3.41 },
+                        { studentId: '17252415', userName: '王嘉懿', option1: '步行', option1Emission: 3.35, option2: '食品消费', option2Emission: 0, savings: 3.35 },
+                        { studentId: '17254593', userName: '王家豪', option1: '步行', option1Emission: 2.41, option2: '食品消费', option2Emission: 0, savings: 2.41 },
+                        { studentId: '17250525', userName: '张曼歆', option1: '步行', option1Emission: 2.894, option2: '食品消费', option2Emission: 13.09, savings: 15.974 }
+                    ];
                     
-                    const existingStudentIds = new Set(userRecords.map(record => record.studentId));
+                    // 清空现有记录并根据Excel数据创建新记录
+                    let userRecords = [];
                     
-                    // 为每个学生创建记录
-                    studentList.forEach(student => {
-                        if (!existingStudentIds.has(student.studentId)) {
-                            // 为每个学生创建2-3条随机记录，排放量设为0
-                            const recordCount = Math.floor(Math.random() * 2) + 2;
-                            for (let i = 0; i < recordCount; i++) {
-                                const now = new Date();
-                                const recordDate = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-                                
-                                userRecords.push({
-                                    studentId: student.studentId,
-                                    userName: student.userName,
-                                    activityType: ['交通出行', '饮食消费', '日常生活'][Math.floor(Math.random() * 3)],
-                                    option1: '选项1',
-                                    option1Count: 1,
-                                    option1Emission: '0',
-                                    option2: '',
-                                    option2Count: 0,
-                                    option2Emission: 0,
-                                    totalEmission: 0,
-                                    savings: 0,
-                                    timestamp: recordDate.toISOString()
-                                });
-                            }
+                    excelData.forEach(data => {
+                        // 为每个学生创建2-3条记录，使用Excel数据
+                        const recordCount = Math.floor(Math.random() * 2) + 2;
+                        for (let i = 0; i < recordCount; i++) {
+                            const now = new Date();
+                            const recordDate = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+                            
+                            userRecords.push({
+                                studentId: data.studentId,
+                                userName: data.userName,
+                                activityType: i % 2 === 0 ? '交通出行' : '饮食消费',
+                                option1: data.option1,
+                                option1Count: 1,
+                                option1Emission: data.option1Emission.toString(),
+                                option2: data.option2,
+                                option2Count: data.option2Emission > 0 ? 1 : 0,
+                                option2Emission: data.option2Emission,
+                                totalEmission: data.option1Emission + data.option2Emission,
+                                savings: data.savings,
+                                timestamp: recordDate.toISOString()
+                            });
                         }
                     });
                     

@@ -92,12 +92,15 @@
                     minute: '2-digit'
                 });
                 
+                // 将option1Emission转换为数字类型
+                const option1Emission = parseFloat(record.option1Emission);
+                
                 row.innerHTML = `
                     <td>${dateStr}</td>
                     <td>${record.studentId || '访客'}</td>
-                    <td>${record.activityType === 'transportation' ? '交通' : '食品'}</td>
-                    <td>${record.option1Label} (${record.option1Amount}${record.activityType === 'transportation' ? 'km' : 'kg'})</td>
-                    <td>${record.option2Label} (${record.option2Amount}${record.activityType === 'transportation' ? 'km' : 'kg'})</td>
+                    <td>${record.activityType === '交通出行' ? '交通' : '食品'}</td>
+                    <td>${record.option1} (${record.option1Count}${record.activityType === '交通出行' ? 'km' : 'kg'})</td>
+                    <td>${record.option2} (${record.option2Count}${record.activityType === '交通出行' ? 'km' : 'kg'})</td>
                     <td>${record.totalEmission.toFixed(3)} kg</td>
                     <td style="color:#2e7d32;font-weight:bold;">${record.savings.toFixed(3)} kg</td>
                 `;
