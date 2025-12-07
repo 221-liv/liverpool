@@ -48,57 +48,56 @@
         // 加载并显示排名数据
         function loadRankingData() {
             try {
-                // 获取用户记录
+                // 清除现有的记录，确保使用p2排行数据
+                localStorage.removeItem('userRecords');
+                
+                // 获取用户记录（此时应为空）
                 let userRecords = JSON.parse(localStorage.getItem('userRecords') || '[]');
                 
-                // 如果没有记录，使用默认的18名学生数据
+                // 使用默认的18名学生数据（p2排行）
                 if (userRecords.length === 0) {
-                    // 18名学生的完整数据
-                    const defaultStudentList = [
-                        { studentId: '17252404', userName: '胡昊杨', option1Emission: 3.33, option2Emission: 0, savings: 3.33 },
-                        { studentId: '17250514', userName: '冒鈺城', option1Emission: 2.06, option2Emission: 0, savings: 2.06 },
-                        { studentId: '17250082', userName: '刘钊源', option1Emission: 4.69, option2Emission: 4.8, savings: 0.11 },
-                        { studentId: '17253321', userName: '刘彦钊', option1Emission: 4.16, option2Emission: 0, savings: 4.16 },
-                        { studentId: '17253334', userName: '张晨', option1Emission: 4.16, option2Emission: 0, savings: 4.16 },
-                        { studentId: '15245793', userName: '金扬颖', option1Emission: 0, option2Emission: 135, savings: 135 },
-                        { studentId: '17255887', userName: '张宇欣', option1Emission: 4.894, option2Emission: 0, savings: 4.894 },
-                        { studentId: '17251502', userName: '吕彦博', option1Emission: 4.894, option2Emission: 0, savings: 4.894 },
-                        { studentId: '17251546', userName: '谢浩然', option1Emission: 3.274, option2Emission: 0, savings: 3.274 },
-                        { studentId: '17251531', userName: '夏雨璨', option1Emission: 2.062, option2Emission: 0, savings: 2.062 },
-                        { studentId: '17255417', userName: '宁佳佳', option1Emission: 3.66, option2Emission: 0, savings: 3.66 },
-                        { studentId: '17255893', userName: '赵雅星', option1Emission: 2.54, option2Emission: 0, savings: 2.54 },
-                        { studentId: '17253344', userName: '唐于杰', option1Emission: 3.75, option2Emission: 0.6, savings: 3.15 },
-                        { studentId: '17253299', userName: '何剑飞', option1Emission: 3.72, option2Emission: 0, savings: 3.72 },
-                        { studentId: '17254248', userName: '周宇翔', option1Emission: 3.41, option2Emission: 0, savings: 3.41 },
-                        { studentId: '17252415', userName: '王嘉懿', option1Emission: 3.35, option2Emission: 0, savings: 3.35 },
-                        { studentId: '17254593', userName: '王家豪', option1Emission: 2.41, option2Emission: 0, savings: 2.41 },
-                        { studentId: '17250525', userName: '张曼歆', option1Emission: 2.894, option2Emission: 13.09, savings: 15.974 }
+                    // p2排行数据（按照总排放量升序）
+                    const p2RankingData = [
+                        { studentId: '17250514', userName: '冒鈺城', totalEmission: 2.06, totalSavings: 2.06 },
+                        { studentId: '17251531', userName: '夏雨璨', totalEmission: 2.062, totalSavings: 2.062 },
+                        { studentId: '17254593', userName: '王家豪', totalEmission: 2.41, totalSavings: 2.41 },
+                        { studentId: '17255893', userName: '赵雅星', totalEmission: 2.54, totalSavings: 2.54 },
+                        { studentId: '17250525', userName: '张曼歆', totalEmission: 15.984, totalSavings: 15.974 },
+                        { studentId: '17252404', userName: '胡昊杨', totalEmission: 3.33, totalSavings: 3.33 },
+                        { studentId: '17252415', userName: '王嘉懿', totalEmission: 3.35, totalSavings: 3.35 },
+                        { studentId: '17251546', userName: '谢浩然', totalEmission: 3.274, totalSavings: 3.274 },
+                        { studentId: '17254248', userName: '周宇翔', totalEmission: 3.41, totalSavings: 3.41 },
+                        { studentId: '17255417', userName: '宁佳佳', totalEmission: 3.66, totalSavings: 3.66 },
+                        { studentId: '17253299', userName: '何剑飞', totalEmission: 3.72, totalSavings: 3.72 },
+                        { studentId: '17253344', userName: '唐于杰', totalEmission: 4.35, totalSavings: 3.15 },
+                        { studentId: '17253321', userName: '刘彦钊', totalEmission: 4.16, totalSavings: 4.16 },
+                        { studentId: '17253334', userName: '张晨', totalEmission: 4.16, totalSavings: 4.16 },
+                        { studentId: '17250082', userName: '刘钊源', totalEmission: 9.49, totalSavings: 0.11 },
+                        { studentId: '17255887', userName: '张宇欣', totalEmission: 4.894, totalSavings: 4.894 },
+                        { studentId: '17251502', userName: '吕彦博', totalEmission: 4.894, totalSavings: 4.894 },
+                        { studentId: '15245793', userName: '金扬颖', totalEmission: 135.00, totalSavings: 135.00 }
                     ];
                     
                     // 为每个学生创建记录
                     userRecords = [];
-                    defaultStudentList.forEach(student => {
-                        // 为每个学生创建2-3条记录
-                        const recordCount = Math.floor(Math.random() * 2) + 2;
-                        for (let i = 0; i < recordCount; i++) {
-                            const now = new Date();
-                            const recordDate = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-                            
-                            userRecords.push({
-                                studentId: student.studentId,
-                                userName: student.userName,
-                                activityType: i % 2 === 0 ? '交通出行' : '饮食消费',
-                                option1: '步行',
-                                option1Count: 1,
-                                option1Emission: student.option1Emission.toString(),
-                                option2: '食品消费',
-                                option2Count: student.option2Emission > 0 ? 1 : 0,
-                                option2Emission: student.option2Emission,
-                                totalEmission: student.option1Emission + student.option2Emission,
-                                savings: student.savings,
-                                timestamp: recordDate.toISOString()
-                            });
-                        }
+                    p2RankingData.forEach(student => {
+                        // 创建一条记录，确保累计排放量与p2一致
+                        const now = new Date();
+                        
+                        userRecords.push({
+                            studentId: student.studentId,
+                            userName: student.userName,
+                            activityType: '交通出行',
+                            option1: '步行',
+                            option1Count: 1,
+                            option1Emission: (student.totalEmission * 0.8).toString(),
+                            option2: '食品消费',
+                            option2Count: 1,
+                            option2Emission: student.totalEmission * 0.2,
+                            totalEmission: student.totalEmission,
+                            savings: student.totalSavings,
+                            timestamp: now.toISOString()
+                        });
                     });
                     
                     // 保存到localStorage
